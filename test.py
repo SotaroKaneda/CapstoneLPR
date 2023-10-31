@@ -1,0 +1,3 @@
+import easyocr_test
+
+
