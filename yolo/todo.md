@@ -14,4 +14,4 @@ https://towardsdatascience.com/convert-pascal-voc-xml-to-yolo-for-object-detecti
 - [x] Test files for correct annotations(write box on images)
 - [x] Create train test folders
 - [x] Fill folders: 80% train, 20% test
-- [ ] Create YAML file for yolo
+- [x] Create YAML file for yolo
