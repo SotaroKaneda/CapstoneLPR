@@ -11,6 +11,11 @@ import cv2
 import numpy as np
 from easyocr_test import easyocr_test
 
+# fix on silo... issues with pillow library
+if os.name == "posix":
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 model = torch.hub.load('ultralytics/yolov5', 'custom', 'best5.pt')
 
 # load trained weights
@@ -19,12 +24,13 @@ model = torch.hub.load('ultralytics/yolov5', 'custom', 'best5.pt')
 # set for inference
 model.eval()    
 
-image_files = glob.glob(os.path.join('roboflow_image_dataset', '*.*'))
+image_files = glob.glob(os.path.join('/l/research/v2x/images', '*.*'))
+batch1 = image_files[0:250]
 
-results = model(image_files)
+results = model(batch1)
 # results.show()
 
-# for pred, im in zip(results.xyxy, image_files):
+# for pred, im in zip(results.xyxy, batch1):
 #     pred = pred.tolist()[0]
 #     # pred: [xmin, ymin, xmax, ymax, confidence, class number]
 #     bounding_box = pred[:4]
@@ -47,7 +53,8 @@ results = model(image_files)
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
 
+
 #help(results)
 
-results.save("results")
+# results.save()
 
