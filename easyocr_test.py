@@ -7,7 +7,8 @@ def easyocr_test(image_path):
     result = reader.readtext(image_path)
     for detection in result:
         if detection[2] > 0.5:
-            print(detection[1])
+            # print(detection[1])
+            return detection[1]
 
 if __name__ == '__main__':
     image_path = sys.argv[1]

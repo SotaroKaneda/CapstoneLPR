@@ -7,6 +7,8 @@ import math
 
 def crop_from_yolo_coords(image ,annotation_info):
     """
+        Uses data from a yolo format annotation file to return a cropped section of the input image.
+
         image: image to be cropped. This is an array like object
         annotation_info: yolo format information
             format: space separated string "<class number> <box x center> <box y center> <box width> <box height>"
@@ -29,6 +31,21 @@ def crop_from_yolo_coords(image ,annotation_info):
     ymax = math.ceil(y_center + (box_height/2))
 
     return image[ymin:ymax, xmin:xmax]
+
+def crop_from_points(image, bbox_points):
+    """
+        Uses four bounding box points to return a cropped section from the input image.
+
+        image: image to crop -> array like
+        bbox_points: [xmin, ymin, xmax, ymax] -> list
+
+        return: a cropped image -> array like
+    """
+    
+    xmin, ymin, xmax, ymax = bbox_points
+
+    return image[int(ymin):int(ymax), int(xmin):int(xmax)]
+    
 
 def main():
     if len(sys.argv) != 4:
