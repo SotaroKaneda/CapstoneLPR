@@ -7,8 +7,11 @@
 import torch
 import glob
 import os
+import cv2
+import numpy as np
+from easyocr_test import easyocr_test
 
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'best1.pt')
+model = torch.hub.load('ultralytics/yolov5', 'custom', 'best5.pt')
 
 # load trained weights
 # model.load_state_dict(torch.load('yolov5/runs/train/exp4/weights/best.pt')['model'].state_dict())
@@ -16,9 +19,35 @@ model = torch.hub.load('ultralytics/yolov5', 'custom', 'best1.pt')
 # set for inference
 model.eval()    
 
-image_files = glob.glob(os.path.join('car_images', '*.*'))
+image_files = glob.glob(os.path.join('roboflow_image_dataset', '*.*'))
 
 results = model(image_files)
-print(results.xyxy[0])
-# results.save()
+# results.show()
+
+# for pred, im in zip(results.xyxy, image_files):
+#     pred = pred.tolist()[0]
+#     # pred: [xmin, ymin, xmax, ymax, confidence, class number]
+#     bounding_box = pred[:4]
+#     confidence = pred[4]
+#     class_number = pred[5]
+#     print(f"Bounding Box Prediciton: {bounding_box}\tConfidence:{confidence:.2f}")
+    
+#     # display cropped image
+#     xmin = int(bounding_box[0])
+#     ymin = int(bounding_box[1])
+#     xmax = int(bounding_box[2])
+#     ymax = int(bounding_box[3])
+
+#     image = cv2.imread(im)
+#     cropped = image[ymin:ymax, xmin:xmax]
+#     # both = np.concatenate((image, cropped), axis=0)
+#     cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+#     # cv2.resizeWindow("Image", 300, 300)
+#     cv2.imshow("Image", cropped)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+
+#help(results)
+
+results.save("results")
 

@@ -17,7 +17,10 @@ From: https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#2-select-
 - Other training parameters can be specified here
 https://github.com/ultralytics/yolov5/blob/master/train.py
 
-- Trained weights get put in `\yolov5\runs\train\exp#\weights`
+- Trained weights get put in `\yolov5\runs\train\exp#\weights`  
+
+### Validation  
+https://github.com/ultralytics/yolov5/issues/7741
 
 
 ### Links and Tutorials  
