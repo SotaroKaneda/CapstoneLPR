@@ -3,7 +3,7 @@ import sys
 
 
 def easyocr_test(image_path):
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], gpu=False)
     result = reader.readtext(image_path)
     for detection in result:
         if detection[2] > 0.5:
