@@ -10,16 +10,6 @@ import csv
 # https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
 
 
-
-### save sheets to csv
-##################################################################################################
-# dataframe = pd.DataFrame(pd.read_excel("../../ALPRPlateExportDaytime.xlsx", sheet_name=0))
-# dataframe.to_csv("../../sheet0.csv",  header=True)
-
-# dataframe = pd.DataFrame(pd.read_excel("../../ALPRPlateExportDaytime.xlsx", sheet_name=1))
-# dataframe.to_csv("../../sheet_1.csv",  header=True)
-##################################################################################################
-
 def create_csv_from_excel(excel_file, save_filename):
     # This has two sheets we need: sheet0 and sheet1
     dataframe0 = pd.DataFrame(pd.read_excel(excel_file, sheet_name=0))
