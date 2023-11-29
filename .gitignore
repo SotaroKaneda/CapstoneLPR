@@ -1,6 +1,10 @@
 yolov5/
 yolo/
-roboflow_image_dataset/
 runs/
+cropped_images/
+sheets/
 no_LP.csv
 preds.csv
+parsed_data.csv
+data.csv
+ALPRPlateExportDaytime.xlsx
