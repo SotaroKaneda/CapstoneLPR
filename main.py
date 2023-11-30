@@ -11,7 +11,8 @@ import cv2
 import numpy as np
 from easyocr_test import easyocr_test
 
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'best5.pt')
+images_location = "../batch300-400"
+model = torch.hub.load('ultralytics/yolov5', 'custom', 'vbest7.pt')
 
 # load trained weights
 # model.load_state_dict(torch.load('yolov5/runs/train/exp4/weights/best.pt')['model'].state_dict())
@@ -19,7 +20,7 @@ model = torch.hub.load('ultralytics/yolov5', 'custom', 'best5.pt')
 # set for inference
 model.eval()    
 
-image_files = glob.glob(os.path.join('roboflow_image_dataset', '*.*'))
+image_files = glob.glob(os.path.join(images_location, '*.*'))
 
 results = model(image_files)
 # results.show()
