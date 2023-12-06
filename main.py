@@ -3,52 +3,54 @@
 # YOLO Object Detection Tutorial: https://docs.ultralytics.com/datasets/detect/
 # Inference using custom trained model: https://github.com/ultralytics/yolov5/issues/7044
 
-
 import torch
 import glob
 import os
-import cv2
-import numpy as np
+import sys
 from easyocr_test import easyocr_test
+from utility import get_bounding_box_data
 
-images_location = "../batch300-400"
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'vbest7.pt')
 
-# load trained weights
-# model.load_state_dict(torch.load('yolov5/runs/train/exp4/weights/best.pt')['model'].state_dict())
+"""
+    This script accepts either a single image or a folder of images to run YOLOv5 object detection on.
+    argument 1: an image file name or image folder name
+    argument 2: whether to run license plate(lp) detection or character detection(char)
+        options: lp, char
+"""
 
-# set for inference
+
+if len(sys.argv) < 3:
+    print("Error. Supply image or image folder and a detection mode(lp for license plate, char for character)")
+    sys.exit()
+
+image_location = ""
+
+# is the input a file or directory?
+if os.path.isdir(sys.argv[1]):
+    image_location = glob.glob(os.path.join(sys.argv[1], '*.*'))
+else:
+    image_location = sys.argv[1]
+
+
+model = torch.hub.load('ultralytics/yolov5', 'custom', 'v-lp-detect-best2.pt')
+
+# set model for inference
 model.eval()    
+# run image(s) through the model
+results = model(image_location)
 
-image_files = glob.glob(os.path.join(images_location, '*.*'))
+# results.xyxy has model predictions for each image given to the model
+for prediction, image in zip(results.xyxy, image_location):
+    # no bounding boxes were found in this image
+    if prediction.numel() == 0:
+        continue
 
-results = model(image_files)
-# results.show()
+    prediction = prediction.tolist()        # prediction is a pytorch tensor, need it as a list
+    boxes = get_bounding_box_data(prediction, 0)
 
-# for pred, im in zip(results.xyxy, image_files):
-#     pred = pred.tolist()[0]
-#     # pred: [xmin, ymin, xmax, ymax, confidence, class number]
-#     bounding_box = pred[:4]
-#     confidence = pred[4]
-#     class_number = pred[5]
-#     print(f"Bounding Box Prediciton: {bounding_box}\tConfidence:{confidence:.2f}")
-    
-#     # display cropped image
-#     xmin = int(bounding_box[0])
-#     ymin = int(bounding_box[1])
-#     xmax = int(bounding_box[2])
-#     ymax = int(bounding_box[3])
+    for box in boxes:
+        print(box)
 
-#     image = cv2.imread(im)
-#     cropped = image[ymin:ymax, xmin:xmax]
-#     # both = np.concatenate((image, cropped), axis=0)
-#     cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
-#     # cv2.resizeWindow("Image", 300, 300)
-#     cv2.imshow("Image", cropped)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
 
-#help(results)
-
+# This saves the YOLOv5 output images to the the runs/detect directory
 results.save()
-
