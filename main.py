@@ -24,6 +24,7 @@ if len(sys.argv) < 3:
     sys.exit()
 
 image_location = ""
+weights = ""
 
 # is the input a file or directory?
 if os.path.isdir(sys.argv[1]):
@@ -31,8 +32,16 @@ if os.path.isdir(sys.argv[1]):
 else:
     image_location = sys.argv[1]
 
+# load weights
+if sys.argv[2] == "lp":
+    weights = os.path.join("best_weights", "v-lp-detect-best.pt")
+elif sys.argv[2] == "char":
+    weights = os.path.join("best_weights", "v-char-detect-best.pt")
+else:
+    print("Error. Incorrect detection mode specified.")
 
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'v-lp-detect-best2.pt')
+
+model = torch.hub.load('ultralytics/yolov5', 'custom', weights)
 
 # set model for inference
 model.eval()    
