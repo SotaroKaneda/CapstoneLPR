@@ -39,6 +39,7 @@ elif sys.argv[2] == "char":
     weights = os.path.join("best_weights", "v-char-detect-best.pt")
 else:
     print("Error. Incorrect detection mode specified.")
+    sys.exit()
 
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', weights)
