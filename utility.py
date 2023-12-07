@@ -1,6 +1,24 @@
 import math
 
 
+def convert_yolo_annotation_data_to_points(image, annotation_info):
+    
+    klass, x_center, y_center, box_width, box_height = annotation_info.split(' ')
+    image_height, image_width, channels = image.shape
+ 
+    x_center = float(x_center) * image_width
+    y_center = float(y_center) * image_height
+    box_width = float(box_width) * image_width
+    box_height = float(box_height) * image_height
+
+    xmin = math.floor(x_center - (box_width/2))
+    ymin = math.floor(y_center - (box_height/2))
+    xmax = math.ceil(x_center + (box_width/2))
+    ymax = math.ceil(y_center + (box_height/2))
+
+    return [xmin, ymin, xmax, ymax]
+
+
 def crop_from_yolo_annotation(image ,annotation_info):
     """
         Uses data from a yolo format annotation file to return a cropped section of the input image.
@@ -13,18 +31,7 @@ def crop_from_yolo_annotation(image ,annotation_info):
         return value: cropped image -> array like
     """
 
-    klass, x_center, y_center, box_width, box_height = annotation_info.split(' ')
-    image_height, image_width, channels = image.shape
- 
-    x_center = float(x_center) * image_width
-    y_center = float(y_center) * image_height
-    box_width = float(box_width) * image_width
-    box_height = float(box_height) * image_height
-
-    xmin = math.ceil(x_center - (box_width/2))
-    xmax = math.ceil(x_center + (box_width/2))
-    ymin = math.ceil(y_center - (box_height/2))
-    ymax = math.ceil(y_center + (box_height/2))
+    xmin, ymin, xmax, ymax = convert_yolo_annotation_data_to_points(image, annotation_info)
 
     return image[ymin:ymax, xmin:xmax]
 
@@ -49,7 +56,7 @@ def get_bounding_box_data(model_prediction, padding=0):
         Retrieves bounding box data from a YOLOv5 model prediction output.
         Optionally adds padding to the bounding boxes
 
-        model_prediction: a YOLOv5 model prediction
+        model_prediction: a YOLOv5 model prediction. Format: [[xmin, ymin, xmax, ymax, confidence, class number]]
         padding: optional parameter to add padding to the bounding box. This increases the size of the bounding box.
 
         return: boxes list with bounding box list, confidence, and class number per box
