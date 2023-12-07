@@ -4,7 +4,7 @@ import glob
 import cv2
 from torchvision import ops
 from utility import convert_yolo_annotation_data_to_points
-
+import numpy as np
 import math
 import sys
 
@@ -32,7 +32,6 @@ def get_iou(prediction_box, ground_truth_box):
 image_folder = sys.argv[1]
 truth_folder = sys.argv[2]
 prediciton_folder = sys.argv[3]
-threshold = float(sys.argv[4])
 
 images = glob.glob(os.path.join(image_folder, '*.*'))
 truth_files = glob.glob(os.path.join(truth_folder, '*.*'))
@@ -75,9 +74,8 @@ for image in images:
             truth_info = tf.readline()
             prediction_info = pf.readlines()
 
-            # the model has predicted more than one bounding box --> error
+            # the model has predicted more than one bounding box
             if len(prediction_info) > 1:
-                FP += 1
                 multiple_boxes += 1
 
                 # check boxes to see if one lines up
@@ -86,9 +84,8 @@ for image in images:
                     prediction_box = convert_yolo_annotation_data_to_points(img, line)
                     
                     iou = get_iou(prediction_box, truth_box)
-                    if iou > threshold:
-                        prediction_info = line
-                        TP += 1
+                    iou = get_iou(prediction_box, truth_box)
+                    iou_list.append(iou)
             else:
                 prediction_info = prediction_info[0]
 
@@ -102,32 +99,36 @@ for image in images:
                 iou = get_iou(prediction_box, truth_box)
                 iou_list.append(iou)
 
-for iou in iou_list:
-    if iou > threshold:
-        TP += 1
-    else:
-        FP += 1
-
-# precision = correct prediction / total predictions = TP/(TP + FP)
-# precision = TP / (TP + FP)
-# Recall = correct predictions / total ground truth = TP / (TP + FN)
-# recall = TP / (TP + FN)
-
-# print()
-# print("Counting Multiple Bounding Boxes as FP")
-# print(f"TP: {TP} FP: {FP} TN: {TN} FN: {FN}")
-# print(f"Precision: {precision} Recall: {recall}")
-# print(f"More than one box prediction: {multiple_boxes}")
-# print()
 
 
-print("Ignoring multiple bounding boxes")
-FP = FP - multiple_boxes
-# precision = correct prediction / total predictions = TP/(TP + FP)
-precision = TP / (TP + FP)
-# Recall = correct predictions / total ground truth = TP / (TP + FN)
-recall = TP / (TP + FN)
-print(f"TP: {TP} FP: {FP} TN: {TN} FN: {FN}")
-print(f"Precision: {precision} Recall: {recall}")
-print(f"More than one box prediction: {multiple_boxes}")
+# Calculate metrics for different threshold values
+print("Counting Multiple Bounding Boxes as FP")
+print(f"Number of Multiple Boxes: {multiple_boxes}")
+print("Threshold\tRecall\tPrecision\tTP\tFP\tTN\tFN")
+print()
+
+p_TN = TN
+p_FN = FN
+threshold_list = np.arange(0.05, 1.0, 0.05)
+threshold_list = np.append(threshold_list, [0.92])
+for threshold in sorted(threshold_list, reverse=True):
+
+    for iou in iou_list:
+        if iou > threshold:
+            TP += 1
+        else:
+            FP += 1
+
+    # precision = correct prediction / total predictions = TP/(TP + FP)
+    precision = TP / (TP + FP)
+    # Recall = correct predictions / total ground truth = TP / (TP + FN)
+    recall = TP / (TP + FN)
+    
+    print(f"{threshold:.2f}\t\t{recall:.2f}\t{precision:.2f}\t\t{TP}\t{FP}\t{TN}\t{FN}")
+    TP = 0
+    FP = 0
+    TN = p_TN
+    FN = p_FN
+
+
 
