@@ -111,7 +111,8 @@ p_TN = TN
 p_FN = FN
 threshold_list = np.arange(0.05, 1.0, 0.05)
 threshold_list = np.append(threshold_list, [0.92])
-for threshold in sorted(threshold_list, reverse=True):
+# for threshold in sorted(threshold_list, reverse=True):
+for threshold in [0.92]:
 
     for iou in iou_list:
         if iou > threshold:
