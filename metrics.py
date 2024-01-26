@@ -3,7 +3,7 @@ import os
 import glob
 import cv2
 from torchvision import ops
-from utility import convert_yolo_annotation_data_to_points
+from scripts.utility import convert_yolo_annotation_data_to_points
 import numpy as np
 import math
 import sys

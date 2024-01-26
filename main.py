@@ -8,7 +8,7 @@ import glob
 import os
 import sys
 from easyocr_test import easyocr_test
-from utility import get_bounding_box_data
+from scripts.utility import get_bounding_box_data
 
 
 """
