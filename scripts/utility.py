@@ -1,5 +1,5 @@
 import math
-
+import json
 
 def convert_yolo_annotation_data_to_points(image, annotation_info):
     
@@ -89,3 +89,38 @@ def get_bounding_box_data(model_prediction, padding=0):
         boxes.sort(key=lambda box: box[0])
 
     return boxes
+
+
+def extract_from_datumaro(json_file, finished_items=None):
+    f = open(json_file)
+    json_dict = json.load(f)
+    
+    data = []
+    items = json_dict["items"]
+
+    if finished_items:
+        items = items[:finished_items]
+
+    for item in items:
+        id = item["id"]
+        image_file = f"{id.split('/')[-1]}.jpg"
+        annotations = item["annotations"]
+        plate_number = ""
+        points = []
+        
+        # check for labeled images
+        if annotations:
+            plate_number = annotations[0]["attributes"]["plate number"]
+            points = annotations[0]["points"]
+
+        data.append([image_file, plate_number, points])
+    
+    return data
+
+
+def keypoints_to_boxes(keypoints):
+    pass
+
+
+def visualize_annotations():
+    pass
