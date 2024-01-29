@@ -3,7 +3,7 @@ import os
 import glob
 import cv2
 from torchvision import ops
-from scripts.utility import convert_yolo_annotation_data_to_points
+from scripts.utility import annotation_to_points
 import numpy as np
 import math
 import sys
@@ -80,8 +80,8 @@ for image in images:
 
                 # check boxes to see if one lines up
                 for line in prediction_info:
-                    truth_box = convert_yolo_annotation_data_to_points(img, truth_info)
-                    prediction_box = convert_yolo_annotation_data_to_points(img, line)
+                    truth_box = annotation_to_points(img, truth_info)
+                    prediction_box = annotation_to_points(img, line)
                     
                     iou = get_iou(prediction_box, truth_box)
                     iou = get_iou(prediction_box, truth_box)
@@ -93,8 +93,8 @@ for image in images:
                 if truth_info == "":
                     continue
 
-                truth_box = convert_yolo_annotation_data_to_points(img, truth_info)
-                prediction_box = convert_yolo_annotation_data_to_points(img, prediction_info)
+                truth_box = annotation_to_points(img, truth_info)
+                prediction_box = annotation_to_points(img, prediction_info)
 
                 iou = get_iou(prediction_box, truth_box)
                 iou_list.append(iou)

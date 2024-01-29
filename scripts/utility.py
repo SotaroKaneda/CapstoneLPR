@@ -1,7 +1,7 @@
 import math
 import json
 
-def convert_yolo_annotation_data_to_points(image, annotation_info):
+def annotation_to_points(image, annotation_info):
     
     klass, x_center, y_center, box_width, box_height = annotation_info.split(' ')
     image_height, image_width, channels = image.shape
@@ -11,15 +11,15 @@ def convert_yolo_annotation_data_to_points(image, annotation_info):
     box_width = float(box_width) * image_width
     box_height = float(box_height) * image_height
 
-    xmin = math.floor(x_center - (box_width/2))
-    ymin = math.floor(y_center - (box_height/2))
+    xmin = math.ceil(x_center - (box_width/2))
+    ymin = math.ceil(y_center - (box_height/2))
     xmax = math.ceil(x_center + (box_width/2))
     ymax = math.ceil(y_center + (box_height/2))
 
     return [xmin, ymin, xmax, ymax]
 
 
-def crop_from_yolo_annotation(image ,annotation_info):
+def crop_from_yolo_annotation(image, annotation_info):
     """
         Uses data from a yolo format annotation file to return a cropped section of the input image.
 
@@ -31,7 +31,7 @@ def crop_from_yolo_annotation(image ,annotation_info):
         return value: cropped image -> array like
     """
 
-    xmin, ymin, xmax, ymax = convert_yolo_annotation_data_to_points(image, annotation_info)
+    xmin, ymin, xmax, ymax = annotation_to_points(image, annotation_info)
 
     return image[ymin:ymax, xmin:xmax]
 
@@ -118,7 +118,7 @@ def extract_from_datumaro(json_file, finished_items=None):
     return data
 
 
-def keypoints_to_boxes(keypoints):
+def keypoints_to_box(keypoints):
     pass
 
 

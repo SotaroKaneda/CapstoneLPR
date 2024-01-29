@@ -26,18 +26,18 @@ def main():
     images = glob.glob(os.path.join(image_folder, "*.*"))
     annotations = glob.glob(os.path.join(annotations_folder, "*.*"))
 
-    images.sort(key=lambda file : int(file.split('\\')[1].split('.')[0]))
-    annotations.sort(key=lambda file : int(file.split('\\')[1].split('.')[0]))
-
-
     for i in range(len(images)):
         with open(annotations[i]) as f:
             image = cv2.imread(images[i])
-            image_extension = images[i].split("\\")[1].split(".")[1]
+            image_name, image_extension = images[i].split("\\")[-1].split(".")
             info = f.readline()
             
+            if info == "":
+                continue
+            
             cropped_image = crop_from_yolo_annotation(image, info)
-            cv2.imwrite(os.path.join(output_folder, f"{i}.{image_extension}"), cropped_image)
+
+            cv2.imwrite(os.path.join(output_folder, f"{image_name}.{image_extension}"), cropped_image)
 
 
 if __name__ == "__main__":
