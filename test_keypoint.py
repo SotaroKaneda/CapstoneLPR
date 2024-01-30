@@ -5,10 +5,13 @@ from scripts.utility import extract_from_datumaro, visualize_annotations, keypoi
 
 
 data_path = r"C:\Users\Jed\Desktop\kp_annotations.json"
-data = extract_from_datumaro(data_path, 5)
-print(data)
+data = extract_from_datumaro(data_path, 608)
+
 image_folder = r"C:\Users\Jed\Desktop\v2x-dataset\cap-images"
-image_name, plate_number, points = data[4]
+
+current_data = data[90]
+image_name, plate_number, points = current_data
+
 image_path = os.path.join(image_folder, image_name)
 image = cv2.imread(image_path)
 
@@ -24,7 +27,6 @@ cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 
-
-# visualize_annotations(image_path, keypoints=points)
+visualize_annotations(image_path, keypoints=points)
 
 

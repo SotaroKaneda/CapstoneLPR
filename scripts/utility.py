@@ -157,18 +157,21 @@ def keypoints_to_box(keypoints, padding=None):
     return [dest_points, box_width, box_height]
 
 
-def visualize_annotations(image_path, box=None, keypoints=None, color=(0, 0, 255)):
+def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 255, 0), point_color=(0, 0, 255)):
+    # TODO Add box annotation plotting
+
     image = cv2.imread(image_path)
     cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
     
     if keypoints:
-        print(keypoints)
-        image = cv2.rectangle(image, tuple(keypoints[0]), tuple(keypoints[3]), (0, 255, 0), 3)
+        top_left = (int(keypoints[0][0]), int(keypoints[0][1]))
+        bottom_right = (int(keypoints[3][0]), int(keypoints[3][1]))
+        image = cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 3)
 
         for point in keypoints:
             x, y = point
-            image = cv2.circle(image, (x, y), radius=10, color=color, thickness=-1)
+            image = cv2.circle(image, (int(x), int(y)), radius=10, color=point_color, thickness=-1)
 
     cv2.imshow("Image", image)
     cv2.waitKey(0)
