@@ -1,6 +1,7 @@
 import math
 import json
 import cv2
+import numpy as np
 
 
 # TODO Add image boundary checking in annotation_to_points and get_bounding_box_data
@@ -118,7 +119,7 @@ def extract_from_datumaro(json_file, finished_items=None):
             pts = annotations[0]["points"]
             
             for i in range(0, 8, 2):
-                points.append([int(pts[i]), int(pts[i + 1])])
+                points.append([pts[i], pts[i + 1]])
 
             ### sort points: [top left, top right, bottom left, bottom right]
             # sort by y coordinate
@@ -139,7 +140,21 @@ def extract_from_datumaro(json_file, finished_items=None):
 
 
 def keypoints_to_box(keypoints, padding=None):
-    pass
+    top_left, top_right, bottom_left, bottom_right = keypoints
+    xmin = min(top_left[0], bottom_left[0])
+    xmax = max(top_right[0], bottom_right[0])
+    ymin = min(top_left[1], top_right[1])
+    ymax = max(bottom_left[1], bottom_right[1])
+    box_width = xmax - xmin
+    box_height = ymax - ymin
+    
+    # point order: top left, bottom left, bottom right, top right 
+    dest_points = np.float32([[0, 0],
+                              [0, box_height-1],
+                              [box_width-1, box_height-1],
+                              [box_width-1, 0]])
+
+    return [dest_points, box_width, box_height]
 
 
 def visualize_annotations(image_path, box=None, keypoints=None, color=(0, 0, 255)):
@@ -148,11 +163,12 @@ def visualize_annotations(image_path, box=None, keypoints=None, color=(0, 0, 255
     cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
     
     if keypoints:
+        print(keypoints)
+        image = cv2.rectangle(image, tuple(keypoints[0]), tuple(keypoints[3]), (0, 255, 0), 3)
+
         for point in keypoints:
             x, y = point
-            image = cv2.circle(image, (x, y), radius=5, color=color, thickness=2)
-
-        image = cv2.rectangle(image, tuple(keypoints[0]), tuple(keypoints[3]), (0, 255, 0), 1)
+            image = cv2.circle(image, (x, y), radius=10, color=color, thickness=-1)
 
     cv2.imshow("Image", image)
     cv2.waitKey(0)
