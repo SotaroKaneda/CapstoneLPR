@@ -1,5 +1,10 @@
 import math
 import json
+import cv2
+
+
+# TODO Add image boundary checking in annotation_to_points and get_bounding_box_data
+# TODO Add vertical character sorting to get_bounding_box_data
 
 def annotation_to_points(image, annotation_info):
     
@@ -74,7 +79,6 @@ def get_bounding_box_data(model_prediction, padding=0):
         confidence = box[4]
         class_number = box[5]       # only two for now: license plate or character
         
-        # floor, and ceil to slightly increase bounding box size
         xmin = math.floor(bounding_box[0]) - padding
         ymin = math.floor(bounding_box[1]) - padding
         xmax = math.ceil(bounding_box[2]) + padding
@@ -111,16 +115,45 @@ def extract_from_datumaro(json_file, finished_items=None):
         # check for labeled images
         if annotations:
             plate_number = annotations[0]["attributes"]["plate number"]
-            points = annotations[0]["points"]
+            pts = annotations[0]["points"]
+            
+            for i in range(0, 8, 2):
+                points.append([int(pts[i]), int(pts[i + 1])])
+
+            ### sort points: [top left, top right, bottom left, bottom right]
+            # sort by y coordinate
+            points.sort(key=lambda point: point[1])
+            
+            # sort each half by x corrdinate
+            top = points[:2]
+            top.sort(key=lambda point: point[0])
+            bottom = points[2:]
+            bottom.sort(key=lambda point: point[0])
+
+            points = top + bottom
+            
 
         data.append([image_file, plate_number, points])
     
     return data
 
 
-def keypoints_to_box(keypoints):
+def keypoints_to_box(keypoints, padding=None):
     pass
 
 
-def visualize_annotations():
-    pass
+def visualize_annotations(image_path, box=None, keypoints=None, color=(0, 0, 255)):
+    image = cv2.imread(image_path)
+    cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+    
+    if keypoints:
+        for point in keypoints:
+            x, y = point
+            image = cv2.circle(image, (x, y), radius=5, color=color, thickness=2)
+
+        image = cv2.rectangle(image, tuple(keypoints[0]), tuple(keypoints[3]), (0, 255, 0), 1)
+
+    cv2.imshow("Image", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
