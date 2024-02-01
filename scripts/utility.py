@@ -139,12 +139,17 @@ def extract_from_datumaro(json_file, finished_items=None):
     return data
 
 
-def keypoints_to_box(keypoints, padding=None):
+def get_min_max(keypoints):
     top_left, top_right, bottom_left, bottom_right = keypoints
     xmin = min(top_left[0], bottom_left[0])
     xmax = max(top_right[0], bottom_right[0])
     ymin = min(top_left[1], top_right[1])
     ymax = max(bottom_left[1], bottom_right[1])
+
+    return [xmin, xmax, ymin, ymax]  
+
+def keypoints_to_box(keypoints, padding=None):
+    xmin, xmax, ymin, ymax = get_min_max(keypoints)
     box_width = xmax - xmin
     box_height = ymax - ymin
     
@@ -160,19 +165,23 @@ def keypoints_to_box(keypoints, padding=None):
 def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 255, 0), point_color=(0, 0, 255)):
     # TODO Add box annotation plotting
 
+    annotated = ""
     image = cv2.imread(image_path)
-    cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    cv2.namedWindow("Annotation", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Annotation", 600, 600)
     
     if keypoints:
         top_left = (int(keypoints[0][0]), int(keypoints[0][1]))
         bottom_right = (int(keypoints[3][0]), int(keypoints[3][1]))
-        image = cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 3)
+        annotated = cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 3)
 
         for point in keypoints:
             x, y = point
-            image = cv2.circle(image, (int(x), int(y)), radius=10, color=point_color, thickness=-1)
+            annotated = cv2.circle(image, (int(x), int(y)), radius=10, color=point_color, thickness=-1)
 
-    cv2.imshow("Image", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    cv2.imshow("Annotation", annotated)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
