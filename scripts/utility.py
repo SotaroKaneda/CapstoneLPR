@@ -148,6 +148,7 @@ def get_min_max(keypoints):
 
     return [xmin, xmax, ymin, ymax]  
 
+
 def keypoints_to_box(keypoints, padding=None):
     xmin, xmax, ymin, ymax = get_min_max(keypoints)
     box_width = xmax - xmin
@@ -173,9 +174,8 @@ def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 25
     cv2.resizeWindow("Annotation", 600, 600)
     
     if keypoints:
-        top_left = (int(keypoints[0][0]), int(keypoints[0][1]))
-        bottom_right = (int(keypoints[3][0]), int(keypoints[3][1]))
-        annotated = cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 3)
+        xmin, xmax, ymin, ymax = get_min_max(keypoints)
+        annotated = cv2.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 255, 0), 3)
 
         for point in keypoints:
             x, y = point
