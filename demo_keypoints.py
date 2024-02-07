@@ -1,7 +1,5 @@
 import os
 import cv2
-import numpy as np
-import time
 import scripts.utility as utils
 
 
@@ -9,7 +7,6 @@ annotation_path = r"C:\Users\Jed\Desktop\kp_annotations.json"
 annotations = utils.extract_from_datumaro(annotation_path, 608)
 
 image_folder = r"C:\Users\Jed\Desktop\v2x-dataset\cap-images"
-image_names = []
 
 for annotation in annotations[0:10]:
     image_name, plate_number, points = annotation
