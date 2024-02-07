@@ -85,7 +85,7 @@ def get_bounding_box_data(model_prediction, padding=0):
         xmax = math.ceil(bounding_box[2]) + padding
         ymax = math.ceil(bounding_box[3]) + padding
 
-        bounding_box = [xmin, ymin, xmax, ymax, confidence, class_number]
+        bounding_box = [[xmin, ymin, xmax, ymax], confidence, class_number]
         boxes.append(bounding_box)
 
     # TODO: Add vertical sorting. This does not account for vertically oriented boxes that appear on some license plates
