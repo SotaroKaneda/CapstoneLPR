@@ -149,7 +149,7 @@ def get_min_max(keypoints):
     return [xmin, xmax, ymin, ymax]  
 
 
-def keypoints_to_box(keypoints, padding=None):
+def get_transform_points(keypoints, padding=None):
     xmin, xmax, ymin, ymax = get_min_max(keypoints)
     box_width = xmax - xmin
     box_height = ymax - ymin
@@ -161,6 +161,17 @@ def keypoints_to_box(keypoints, padding=None):
                               [box_width-1, 0]])
 
     return [dest_points, box_width, box_height]
+
+
+def deskew(image, points):
+    top_left, top_right, bottom_left, bottom_right = points 
+    input_points = np.float32([top_left, bottom_left, bottom_right, top_right])
+    dest_points, width, height = get_transform_points(points)
+
+    M = cv2.getPerspectiveTransform(input_points, dest_points)
+    deskewed = cv2.warpPerspective(image, M, (int(width), int(height)), flags=cv2.INTER_LINEAR)
+
+    return deskewed
 
 
 def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 255, 0), point_color=(0, 0, 255)):
