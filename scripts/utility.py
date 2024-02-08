@@ -2,6 +2,7 @@ import math
 import json
 import cv2
 import numpy as np
+from openpyxl import Workbook
 
 
 # TODO Add image boundary checking in annotation_to_points and get_bounding_box_data
@@ -115,7 +116,14 @@ def extract_from_datumaro(json_file, finished_items=None):
         
         # check for labeled images
         if annotations:
-            plate_number = annotations[0]["attributes"]["plate number"]
+            attributes = annotations[0]["attributes"]
+            plate_number = ""
+            keys = attributes.keys()
+            if "plate number" in keys:
+                plate_number = attributes["plate number"]
+            elif "Plate Number" in keys:
+                plate_number = attributes["Plate Number"]
+
             pts = annotations[0]["points"]
             
             for i in range(0, 8, 2):
@@ -196,3 +204,13 @@ def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 25
     cv2.imshow("Annotation", annotated)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
+
+
+def create_init_workbook(sheet_title, headers):
+    workbook = Workbook()
+    sheet = workbook.active
+    headers = headers
+    sheet.title = sheet_title
+    sheet.append(headers)
+
+    return workbook

@@ -11,7 +11,7 @@ if len(sys.argv) < 4:
 image_folder = sys.argv[1]
 annotations_path = sys.argv[2]
 save_folder = sys.argv[3]
-annotations = utils.extract_from_datumaro(annotations_path+"\default.json")
+annotations = utils.extract_from_datumaro(annotations_path)
 
 for annotation in annotations:
     image_name, plate_number, points = annotation
