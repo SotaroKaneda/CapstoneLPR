@@ -1,53 +1,33 @@
-import pandas as pd
-import csv
+import openpyxl
 
 
-# https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
-# https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
-# https://www.geeksforgeeks.org/python-read-csv-using-pandas-read_csv/
-# https://www.geeksforgeeks.org/writing-csv-files-in-python/#
-# https://towardsdatascience.com/how-to-select-rows-from-pandas-dataframe-based-on-column-values-d3f5da421e93
-# https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
+workbook = openpyxl.load_workbook(r"D:\v2x-11-30-data\ALPRPlateExport11-30-23Revised.xlsx")
+sheet = workbook.active
+sheet1 = workbook["Sheet1"]
+jurisdiction_dict = {}
 
+# parse sheet one for jurisdictions
+for row in sheet1.iter_rows(min_row=2, max_row=197137, values_only=True):
+    UFM_ID = row[0]
+    PLATE_JURISDICTION = row[6]
+    jurisdiction_dict[UFM_ID] = PLATE_JURISDICTION
 
+with open(r"C:\Users\Jed\Desktop\capstone_project\v2x-dataset\data-11-30.csv", "w") as file:
+    headers = ",".join(list(next(sheet.values))) + ",\n"
+    file.write(headers)
+    for row in sheet.iter_rows(min_row=2, max_row=55345, values_only=True):
+        row = list(row)
+        row[8] = jurisdiction_dict[row[0]]
+        row[11] = row[11].split("/")[-1]
+        if row[12] : row[12] = row[12].split("/")[-1]
+        if row[13] : row[13] = row[13].split("/")[-1]
+        if row[14] : row[14] = row[14].split("/")[-1]
 
-### save sheets to csv
-##################################################################################################
-# dataframe = pd.DataFrame(pd.read_excel("../../ALPRPlateExportDaytime.xlsx", sheet_name=0))
-# dataframe.to_csv("../../sheet0.csv",  header=True)
+        # update jurisiction here. The datasheet has the excel formula instead of the jurisdiction
+        write_line = ""
+        for entry in row:
+            write_line += f"{str(entry)},"
 
-# dataframe = pd.DataFrame(pd.read_excel("../../ALPRPlateExportDaytime.xlsx", sheet_name=1))
-# dataframe.to_csv("../../sheet_1.csv",  header=True)
-##################################################################################################
+        write_line += "\n"
+        file.write(write_line)
 
-s0_df = pd.read_csv("../../sheet_0.csv", usecols=["IMAGE1", "IMAGE2", "PLATE_READ"])
-s1_df = pd.read_csv("../../sheet_1.csv", usecols=["IMAGE1", "IMAGE2", "PLATE_READ"])
-
-
-fields = ["PLATE_READ", "IMAGE1", "IMAGE2"]
-
-
-with open("../../s0_rel.csv", "w") as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(fields)
-    
-    # Write Sheet 0 data
-    for i in range(len(s0_df)):
-        image_1 = s0_df.loc[i]["IMAGE1"].split("/")[-1] if type(s0_df.loc[i]["IMAGE1"]) != float else 0
-        image_2 = s0_df.loc[i]["IMAGE2"].split("/")[-1] if type(s0_df.loc[i]["IMAGE2"]) != float else 0
-        plate_num = s0_df.loc[i]["PLATE_READ"]
-        row = [plate_num, image_1, image_2]
-        csvwriter.writerow(row)
-
-
-with open("../../s1_rel.csv", "w") as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(fields)
-    
-    # Write Sheet 1 data
-    for i in range(len(s1_df)):
-        image_1 = s1_df.loc[i]["IMAGE1"].split("/")[-1] if type(s1_df.loc[i]["IMAGE1"]) != float else 0
-        image_2 = s1_df.loc[i]["IMAGE2"].split("/")[-1] if type(s1_df.loc[i]["IMAGE2"]) != float else 0
-        plate_num = s1_df.loc[i]["PLATE_READ"]
-        row = [plate_num, image_1, image_2]
-        csvwriter.writerow(row)

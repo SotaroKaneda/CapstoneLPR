@@ -23,21 +23,24 @@ def main():
     annotations_folder = sys.argv[2]
     output_folder = sys.argv[3]
 
-    images = glob.glob(os.path.join(image_folder, "*.*"))
-    annotations = glob.glob(os.path.join(annotations_folder, "*.*"))
-
-    for i in range(len(images)):
-        with open(annotations[i]) as f:
-            image = cv2.imread(images[i])
-            image_name, image_extension = images[i].split("\\")[-1].split(".")
+    images = os.listdir(image_folder)
+    
+    for img in images:
+        ann_file = img.split(".")[0] + ".txt"
+        annotation_path = os.path.join(annotations_folder, ann_file)
+        image_path = os.path.join(image_folder, img)
+        with open(annotation_path) as f:
+            image = cv2.imread(image_path)
+            image_name, image_extension = img.split(".")
             info = f.readline()
             
             if info == "":
                 continue
             
             cropped_image = crop_from_yolo_annotation(image, info)
-
-            cv2.imwrite(os.path.join(output_folder, f"{image_name}.{image_extension}"), cropped_image)
+            save_path = os.path.join(output_folder, f"{image_name}.{image_extension}")
+            # cv2.imwrite(save_path, cropped_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+            cv2.imwrite(save_path, cropped_image)
 
 
 if __name__ == "__main__":

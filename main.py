@@ -7,8 +7,11 @@ import torch
 import glob
 import os
 import sys
-from easyocr_test import easyocr_test
-from scripts.utility import get_bounding_box_data
+import cv2
+import matplotlib
+import matplotlib.pyplot as plt
+# from easyocr_test import easyocr_test
+from scripts.utility import get_bounding_box_data, crop_from_points
 
 
 """
@@ -18,25 +21,43 @@ from scripts.utility import get_bounding_box_data
         options: lp, char
 """
 
-
 if len(sys.argv) < 3:
     print("Error. Supply image or image folder and a detection mode(lp for license plate, char for character)")
     sys.exit()
 
-image_location = ""
+image_files = ""
 weights = ""
+save_folder = r"D:\v2x-11-30-data\crops\images"
 
 # is the input a file or directory?
 if os.path.isdir(sys.argv[1]):
-    image_location = glob.glob(os.path.join(sys.argv[1], '*.*'))
+    image_files = glob.glob(os.path.join(sys.argv[1], '*.*'))
 else:
-    image_location = sys.argv[1]
+    image_files = [sys.argv[1]]
+
+# multiples = []
+# with open("multiple_images.txt", "r") as file:
+#     for img in file.readlines():
+#         multiples.append(img.strip())
+
+# current_crops = os.listdir(save_folder)
+# current = current_crops + multiples
+
+# print(f"num total: {len(image_files)}")
+# print(f"num current: {len(current)}")
+# new_images = []
+# for img in image_files:
+#     if img.split("\\")[-1].split(".")[0] + ".png" not in current:
+#         new_images.append(img)
+
+# print(f"new: {len(new_images)}")
+
 
 # load weights
 if sys.argv[2] == "lp":
     weights = os.path.join("best_weights", "v-lp-detect-best.pt")
 elif sys.argv[2] == "char":
-    weights = os.path.join("best_weights", "v-char-detect-best.pt")
+    weights = os.path.join("best_weights", "x-char-detect-best.pt")
 else:
     print("Error. Incorrect detection mode specified.")
     sys.exit()
@@ -44,23 +65,52 @@ else:
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', weights)
 
-# set model for inference
+# matplotlib.use('TkAgg')
 model.eval()    
-# run image(s) through the model
-results = model(image_location)
 
-# results.xyxy has model predictions for each image given to the model
-for prediction, image in zip(results.xyxy, image_location):
-    # no bounding boxes were found in this image
-    if prediction.numel() == 0:
-        continue
+batch_size = 200
+num_images = len(image_files)
+batches = []
+no_plate = 0
 
-    prediction = prediction.tolist()        # prediction is a pytorch tensor, need it as a list
-    boxes = get_bounding_box_data(prediction, 0)
+for i in range(0, num_images, batch_size):
+    if (i + batch_size) > num_images:
+        batches.append(image_files[i:])
+    else:
+        batches.append(image_files[i:(i+batch_size)])
 
-    for box in boxes:
-        print(box)
+batch_num = 0
 
+with open("multiple_images.txt", "w") as file, open("no_plate.txt", "w") as n_file:
+    for batch in batches:
+        batch_num += 1
 
-# This saves the YOLOv5 output images to the the runs/detect directory
-results.save()
+        if (batch_num % 100) == 0:
+            print(batch_num)
+
+        results = model(batch)
+
+        for prediction, image in zip(results.xyxy, batch):
+            image_name = image.split("\\")[-1].split(".")[0] + ".png"
+            
+            if prediction.numel() == 0:
+                no_plate += 1
+                n_file.write(f"{image_name}\n")
+                continue
+
+            prediction = prediction.tolist()     
+            boxes = get_bounding_box_data(prediction, 0)
+
+            img = cv2.imread(image)
+            # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            image_name = image.split("\\")[-1].split(".")[0] + ".png"
+            save_path = os.path.join(save_folder, image_name)
+
+            if len(boxes) > 1:
+                file.write(f"{image_name}\n")
+                continue
+
+            for box in boxes:
+                bbox, conf, klass = box
+                crop = crop_from_points(img, bbox)
+                cv2.imwrite(save_path, crop, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])

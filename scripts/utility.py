@@ -18,8 +18,8 @@ def annotation_to_points(image, annotation_info):
     box_width = float(box_width) * image_width
     box_height = float(box_height) * image_height
 
-    xmin = math.ceil(x_center - (box_width/2))
-    ymin = math.ceil(y_center - (box_height/2))
+    xmin = math.floor(x_center - (box_width/2))
+    ymin = math.floor(y_center - (box_height/2))
     xmax = math.ceil(x_center + (box_width/2))
     ymax = math.ceil(y_center + (box_height/2))
 
