@@ -26,6 +26,22 @@ def annotation_to_points(image, annotation_info):
     return [xmin, ymin, xmax, ymax]
 
 
+def box_to_annotation(box, image_width, image_height, class_number):
+    xmin, ymin, xmax, ymax = box
+    box_width = xmax - xmin
+    box_height = ymax - ymin
+    x_center = xmin + (box_width/2)
+    y_center = ymin + (box_height/2)
+
+    # normalize values
+    box_width = box_width / image_width
+    box_height = box_height / image_height
+    x_center = x_center / image_width
+    y_center = y_center / image_height
+
+    return f"{class_number} {x_center:.6f} {y_center:.6f} {box_width:.6f} {box_height:.6f}"
+
+    
 def crop_from_yolo_annotation(image, annotation_info):
     """
         Uses data from a yolo format annotation file to return a cropped section of the input image.
@@ -57,6 +73,23 @@ def crop_from_points(image, bbox_points):
 
     return image[int(ymin):int(ymax), int(xmin):int(xmax)]
 
+def vertical_sort(boxes):
+    num_boxes = len(boxes)
+
+    for i in range(0, num_boxes - 1):
+        box1 = boxes[i][0]
+        box2 = boxes[i + 1][0]
+        xmin1, ymin1, xmax1, ymax1 = box1
+        xmin2, ymin2, xmax2, ymax2 = box2
+        box1_height = ymax1 - ymin1
+        box2_height = ymax2 - ymin2
+
+        # [xmin, ymin, xmax, ymax]
+        if (ymin1 >= (ymax2+5)) and box1_height < 0.7*box2_height:
+            print("ran")
+            if xmax1 >= xmin2 and xmax1 <= xmax2:
+                boxes[i][0] = box2
+                boxes[i+1][0] = box1
 
 def get_bounding_box_data(model_prediction, padding=0):
     """
@@ -89,10 +122,10 @@ def get_bounding_box_data(model_prediction, padding=0):
         bounding_box = [[xmin, ymin, xmax, ymax], confidence, class_number]
         boxes.append(bounding_box)
 
-    # TODO: Add vertical sorting. This does not account for vertically oriented boxes that appear on some license plates
-    # sort the boxes by the xmin corrdinate to order the boxes correctly left to right
+    # sort horizontally and vertically
     if len(boxes) > 1:
         boxes.sort(key=lambda box: box[0])
+        vertical_sort(boxes)
 
     return boxes
 

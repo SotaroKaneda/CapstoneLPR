@@ -17,18 +17,29 @@ if len(sys.argv) < 2:
     print("Error. Need to provide YOLOv5 model weights file.")
     sys.exit()
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
+
 weights = sys.argv[1]
 model = torch.hub.load('ultralytics/yolov5', 'custom', weights)
 model.eval()    
+# model.to(device)
 
-image_files = glob.glob(os.path.join('../v2x-dataset/cap-images', '*.*'))
+image_files = glob.glob(os.path.join(r"D:\v2x-11-30-data\crops\images", '*.*'))
 image_annotation_file = open("../v2x-dataset/cvat-annotations/train.txt", "w")
+batch_size = 100
+batches = [image_files[i:i+batch_size] for i in range(0, len(image_files), batch_size)]
+print(f"Number of Batches: {len(batches)}")
 
-# batches = [image_files[i:i+100] for i in range(len(image_files))]
-batches = [image_files[:100]]
-
+batches = batches[5:10]
+batch_num = 0
 for batch in batches:
     results = model(batch)
+    batch_num += 1
+
+    if batch_num % 50 == 0:
+        print(batch_num)
 
     for pred, im in zip(results.xyxy, batch):
         if pred.numel() == 0:
@@ -43,19 +54,18 @@ for batch in batches:
         filename = filename.split(".")[0]   # remove image type ending
 
         # write image location for CVAT
-        image_annotation_file.write(f"obj_train_data/{filename}.jpg\n")
+        image_annotation_file.write(f"obj_train_data/{filename}.png\n")
 
         with open(f"{directory}/{filename}.txt", "w") as file:
+            image = cv2.imread(im)
+            image_height, image_width, channels = image.shape
+
             for box in boxes:
                 bounding_box = box[0]
                 confidence = box[1]
                 class_number = int(box[2])
                 
                 xmin, ymin, xmax, ymax = bounding_box
-
-                image = cv2.imread(im)
-                image_height, image_width, channels = image.shape
-
                 box_width = xmax - xmin
                 box_height = ymax - ymin
                 x_center = xmin + (box_width/2)

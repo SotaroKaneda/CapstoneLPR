@@ -27,7 +27,7 @@ if len(sys.argv) < 3:
 
 image_files = ""
 weights = ""
-save_folder = r"D:\v2x-11-30-data\crops\images"
+save_folder = r"D:\v2x-11-30-data\characters"
 
 # is the input a file or directory?
 if os.path.isdir(sys.argv[1]):
@@ -57,7 +57,7 @@ else:
 if sys.argv[2] == "lp":
     weights = os.path.join("best_weights", "v-lp-detect-best.pt")
 elif sys.argv[2] == "char":
-    weights = os.path.join("best_weights", "x-char-detect-best.pt")
+    weights = os.path.join("best_weights", "x-char-detect-best-2.pt")
 else:
     print("Error. Incorrect detection mode specified.")
     sys.exit()
@@ -81,36 +81,40 @@ for i in range(0, num_images, batch_size):
 
 batch_num = 0
 
-with open("multiple_images.txt", "w") as file, open("no_plate.txt", "w") as n_file:
-    for batch in batches:
-        batch_num += 1
+batches = [image_files[:10]]
+# with open("multiple_images.txt", "w") as file, open("no_plate.txt", "w") as n_file:
+for batch in batches:
+    batch_num += 1
 
-        if (batch_num % 100) == 0:
-            print(batch_num)
+    if (batch_num % 100) == 0:
+        print(batch_num)
 
-        results = model(batch)
+    results = model(batch)
 
-        for prediction, image in zip(results.xyxy, batch):
-            image_name = image.split("\\")[-1].split(".")[0] + ".png"
-            
-            if prediction.numel() == 0:
-                no_plate += 1
-                n_file.write(f"{image_name}\n")
-                continue
+    for prediction, image in zip(results.xyxy, batch):
+        image_name = image.split("\\")[-1].split(".")[0] + ".png"
+        
+        if prediction.numel() == 0:
+            no_plate += 1
+            # n_file.write(f"{image_name}\n")
+            continue
 
-            prediction = prediction.tolist()     
-            boxes = get_bounding_box_data(prediction, 0)
+        prediction = prediction.tolist()     
+        boxes = get_bounding_box_data(prediction, padding=1)
 
-            img = cv2.imread(image)
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            image_name = image.split("\\")[-1].split(".")[0] + ".png"
-            save_path = os.path.join(save_folder, image_name)
+        img = cv2.imread(image)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        image_name_base = image.split("\\")[-1].split(".")[0]
+        image_name = image.split("\\")[-1].split(".")[0] + ".png"
+        os.mkdir(os.path.join(save_folder, image_name_base))
+        # save_path = os.path.join(save_folder, image_name)
 
-            if len(boxes) > 1:
-                file.write(f"{image_name}\n")
-                continue
+        # if len(boxes) > 1:
+            # file.write(f"{image_name}\n")
+        #     continue
 
-            for box in boxes:
-                bbox, conf, klass = box
-                crop = crop_from_points(img, bbox)
-                cv2.imwrite(save_path, crop, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+        for index, box in enumerate(boxes):
+            bbox, conf, klass = box
+            crop = crop_from_points(img, bbox)
+            save_path = os.path.join(save_folder, image_name_base, f"{index}-" + image_name)
+            cv2.imwrite(save_path, crop, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])

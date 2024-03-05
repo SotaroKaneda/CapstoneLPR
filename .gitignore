@@ -1,5 +1,6 @@
 __pycache__/
 yolov5/
+best_weights/
 runs/
 cropped_images/
 sheets/
