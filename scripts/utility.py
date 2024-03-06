@@ -84,12 +84,13 @@ def vertical_sort(boxes):
         box1_height = ymax1 - ymin1
         box2_height = ymax2 - ymin2
 
-        # [xmin, ymin, xmax, ymax]
-        if (ymin1 >= (ymax2+5)) and box1_height < 0.7*box2_height:
-            print("ran")
+        # 0.25 to account for the possibility of vertical overlap
+        if (ymin1 >= (ymax2 - 0.25*box2_height)):
+            # print("ran")
             if xmax1 >= xmin2 and xmax1 <= xmax2:
-                boxes[i][0] = box2
-                boxes[i+1][0] = box1
+                temp = boxes[i]
+                boxes[i] = boxes[i + 1]
+                boxes[i + 1] = temp
 
 def get_bounding_box_data(model_prediction, padding=0):
     """
