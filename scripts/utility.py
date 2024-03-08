@@ -92,7 +92,7 @@ def vertical_sort(boxes):
                 boxes[i] = boxes[i + 1]
                 boxes[i + 1] = temp
 
-def get_bounding_box_data(model_prediction, padding=0):
+def get_bounding_box_data(model_prediction, image, padding=0):
     """
         Retrieves bounding box data from a YOLOv5 model prediction output.
         Optionally adds padding to the bounding boxes
@@ -114,11 +114,13 @@ def get_bounding_box_data(model_prediction, padding=0):
         bounding_box = box[:4]
         confidence = box[4]
         class_number = box[5]       # only two for now: license plate or character
+
+        width, height, channels = image.shape
         
-        xmin = math.floor(bounding_box[0]) - padding
-        ymin = math.floor(bounding_box[1]) - padding
-        xmax = math.ceil(bounding_box[2]) + padding
-        ymax = math.ceil(bounding_box[3]) + padding
+        xmin = max(0, math.floor(bounding_box[0]) - padding)
+        ymin = max(0, math.floor(bounding_box[1]) - padding)
+        xmax = min(height, math.ceil(bounding_box[2]) + padding)
+        ymax = min(width, math.ceil(bounding_box[3]) + padding)
 
         bounding_box = [[xmin, ymin, xmax, ymax], confidence, class_number]
         boxes.append(bounding_box)
