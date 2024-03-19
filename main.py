@@ -10,6 +10,9 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+from CharacterModel import CharacterModel
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -101,90 +104,135 @@ def custom_collate(batch):
     images, names = zip(*batch)
     return list(images), list(names)
     
+def main():
+    image_paths = glob.glob(os.path.join(r"D:\v2x-11-30-data\ALPRPlateExport11-30-23", "*"))
+    label_path = os.path.join(r"D:\v2x-dataset", "data-11-30.csv")
+    with open(label_path, "r") as file:
+        label_dict = create_label_dict(file.readlines())
 
-image_paths = glob.glob(os.path.join(r"D:\v2x-11-30-data\ALPRPlateExport11-30-23", "*"))
-label_path = os.path.join(r"C:\Users\Jed\Desktop\capstone_project\v2x-dataset", "data-11-30.csv")
-with open(label_path, "r") as file:
-    label_dict = create_label_dict(file.readlines())
+    pred_dict = ""
+    test_paths = image_paths[56396:]
+    test_data = TestDataset(image_paths)
+    batch_size = 16
+    num_workers = 4
+    test_dataloader = DataLoader(test_data, batch_size=batch_size, num_workers=num_workers, collate_fn=custom_collate)
+    batches = len(test_dataloader)
+    labels = "0123456789ABCDEFGHIJKLMNPQRSTUVWXYZ"
+    image_size = 32
+    transforms = A.Compose([
+        # A.Affine(shear={"x":15}, p=1.0),
+        A.LongestMaxSize(max_size=image_size),
+        A.PadIfNeeded(
+            min_height=image_size,
+            min_width=image_size,
+            border_mode=cv2.BORDER_CONSTANT,
+            value=(0, 0, 0),
+        ),
+        A.Normalize(
+            mean=[0, 0, 0],
+            std=[1, 1, 1],
+            max_pixel_value=255,
+        ),
+        ToTensorV2()
+    ])
 
-pred_dict = ""
-test_paths = image_paths[56396:]
-test_data = TestDataset(image_paths)
-batch_size = 16
-test_dataloader = DataLoader(test_data, batch_size=batch_size, collate_fn=custom_collate)
-batches = len(test_dataloader)
+    lp_weights = os.path.join("best_weights", "v-lp-detect-best.pt")
+    char_weights = os.path.join("best_weights", "x-char-detect-best-2.pt")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-lp_weights = os.path.join("best_weights", "v-lp-detect-best.pt")
-char_weights = os.path.join("best_weights", "x-char-detect-best-2.pt")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tic = time.time()
+    lp_model = torch.hub.load('ultralytics/yolov5', 'custom', lp_weights)
+    char_model = torch.hub.load('ultralytics/yolov5', 'custom', char_weights)
+    # processor = TrOCRProcessor.from_pretrained('microsoft/trocr-large-printed')
+    # trocr_model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-large-printed')
+    classify_model = CharacterModel()
+    classify_model.load_state_dict(torch.load(r"C:\Users\Jed\Desktop\capstone_project\character-classifier\aug-small-test.pth"))
+    classify_model.eval()
+    lp_model.eval()
+    char_model.eval()
+    toc = time.time()
+    load_time = toc - tic
 
-tic = time.time()
-lp_model = torch.hub.load('ultralytics/yolov5', 'custom', lp_weights)
-char_model = torch.hub.load('ultralytics/yolov5', 'custom', char_weights)
-processor = TrOCRProcessor.from_pretrained('microsoft/trocr-large-printed')
-trocr_model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-large-printed')
-lp_model.eval()
-char_model.eval()
-toc = time.time()
-load_time = toc - tic
+    lp_model.to(device)
+    char_model.to(device)
+    classify_model.to(device)
+    # while(1):
+    #     print("1")
+    #     time.sleep(5)
 
-matplotlib.use("TkAgg")
-tic = time.time()
-batch_num = 0
-original_ocr = []
-with open("../trocr-3-10.csv", "w") as file:
-    file.write("LABEL,OCR_PLATE,OCR_CHARACTERS,IMAGE\n")
-    for batch in test_dataloader:
-        if batch_num % 10 == 0:
-            toc = time.time()
-            print(f"Batch: {batch_num}/{batches}\tElapsed Time: {(toc - tic) / 60} minutes")
-        images, image_names = batch
-        # tic = time.time()
-        lp_model.to(device)
-        lp_results = lp_model(images)
-        
-        pred_dict, current_images, license_plates = get_crops_lp(lp_results.xyxy, images, image_names)
+    matplotlib.use("TkAgg")
+    tic = time.time()
+    batch_num = 0
+    original_ocr = []
+    with open("../char-synth-1000-3-18.csv", "w") as file:
+        file.write("LABEL,PRED_CHARS,IMAGE\n")
+        for batch in test_dataloader:
+            if batch_num % 10 == 0:
+                toc = time.time()
+                print(f"Batch: {batch_num}/{batches}\tElapsed Time: {(toc - tic) / 60} minutes")
+            images, image_names = batch
+            # tic = time.time()
+            # lp_model.to(device)
+            lp_results = lp_model(images)
+            
+            pred_dict, current_images, license_plates = get_crops_lp(lp_results.xyxy, images, image_names)
 
-        char_model.to(device)
-        char_results = char_model(license_plates)
-        get_crops_chars(char_results.xyxy, license_plates, current_images, pred_dict, padding=1)
+            # char_model.to(device)
+            char_results = char_model(license_plates)
+            get_crops_chars(char_results.xyxy, license_plates, current_images, pred_dict, padding=1)
 
-        trocr_model.to(device)
-        for image_name, data in pred_dict.items():
-            # ocr on lp images
-            pixel_values = processor(images=data["lp_crop"], return_tensors="pt").pixel_values
-            pixel_values = pixel_values.to(device)
-            generated_ids = trocr_model.generate(pixel_values)
-            generated_ids = generated_ids.cpu()
-            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            # generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
-            parsed_ocr_value = re.sub('[\W_]+', '', generated_text)
-            no_spaces = "".join(generated_text.split(" "))
-            # original_ocr.append((generated_text, no_spaces, image_name))
-            pred_dict[image_name]["ocr_plate"] = parsed_ocr_value
+            # trocr_model.to(device)
+            for image_name, data in pred_dict.items():
+    #             # ocr on lp images
+    #             pixel_values = processor(images=data["lp_crop"], return_tensors="pt").pixel_values
+    #             pixel_values = pixel_values.to(device)
+    #             generated_ids = trocr_model.generate(pixel_values)
+    #             generated_ids = generated_ids.cpu()
+    #             generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    #             # generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
+    #             parsed_ocr_value = re.sub('[\W_]+', '', generated_text)
+    #             no_spaces = "".join(generated_text.split(" "))
+    #             # original_ocr.append((generated_text, no_spaces, image_name))
+    #             pred_dict[image_name]["ocr_plate"] = parsed_ocr_value
 
-            # ocr on characters
-            if data["char_crops"]:
-                pixel_values = processor(images=data["char_crops"], return_tensors="pt").pixel_values
-                pixel_values = pixel_values.to(device)
-                generated_ids = trocr_model.generate(pixel_values)
-                generated_ids = generated_ids.cpu()
-                generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
-                character_prediction = "".join(generated_text)
-                pred_dict[image_name]["ocr_chars"] = character_prediction
-            else:
-                pred_dict[image_name]["ocr_chars"] = ""
+    #             # ocr on characters
+                if data["char_crops"]:
+                    pred_str = ""
+                    for char_image in data["char_crops"]:
+                        with torch.no_grad():
+                            t_char_image = transforms(image=char_image)["image"]
+                            t_char_image = torch.unsqueeze(t_char_image, 0).to(device)
+                            # label = dataset.labels[labels.item()]
+                            outputs = classify_model(t_char_image)
+                            values, pred = torch.max(outputs, 1)
+                            pred_str += labels[pred]
+                    file.write(f"{label_dict[image_name]},{pred_str},{image_name}\n")
+                    # print(pred_str)
+                    # display_image(data["lp_crop"])
 
-        for image_name, data in pred_dict.items():
-            file.write(f'{label_dict[image_name]},{data["ocr_plate"]},{data["ocr_chars"]},{image_name}\n')
+    #                 pixel_values = processor(images=data["char_crops"], return_tensors="pt").pixel_values
+    #                 pixel_values = pixel_values.to(device)
+    #                 generated_ids = trocr_model.generate(pixel_values)
+    #                 generated_ids = generated_ids.cpu()
+    #                 generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
+    #                 character_prediction = "".join(generated_text)
+    #                 pred_dict[image_name]["ocr_chars"] = character_prediction
+    #             else:
+    #                 pred_dict[image_name]["ocr_chars"] = ""
 
-        batch_num += 1
-toc = time.time()
-total_time = toc - tic
-print(f"Load Time: {load_time} seconds\tProcessing Time: {total_time} seconds for {batches} batches.")
+    #         for image_name, data in pred_dict.items():
+    #             file.write(f'{label_dict[image_name]},{data["ocr_plate"]},{data["ocr_chars"]},{image_name}\n')
+
+            batch_num += 1
+    # toc = time.time()
+    # total_time = toc - tic
+    # print(f"Load Time: {load_time} seconds\tProcessing Time: {total_time} seconds for {batches} batches.")
 
 
-# with open("../original_ocr.csv", "w") as file:
-#     file.write("label,model_out,no_spaces,image")
-#     for line in original_ocr:
-#         file.write(f"{line[0]},{line[1]},{line[2]},{line[3]}\n")
+    # with open("../original_ocr.csv", "w") as file:
+    #     file.write("label,model_out,no_spaces,image")
+    #     for line in original_ocr:
+    #         file.write(f"{line[0]},{line[1]},{line[2]},{line[3]}\n")
+
+if __name__ == "__main__":
+    main()
