@@ -1,5 +1,10 @@
 # CapstoneLPR
 
+### Copy the Repository
+
+$ git clone 
+```
+
 ### Run the Model
 
 1. Create a file named `twos_comp_part1.c` and implement the following in the file.
