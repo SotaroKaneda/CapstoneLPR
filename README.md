@@ -2,7 +2,7 @@
 
 ### Copy the Repository
 
-$ git clone 
+$ git clone https://github.com/SotaroKaneda/CapstoneLPR.git
 ```
 
 ### Run the Model
