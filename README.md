@@ -35,23 +35,9 @@ pip3 install transformers
 pip3 install datasets
 ```
 
+2. Run on 1 GPU node (4 GPUS)
 ```
-$ gcc -Werror twos_comp_part2.c -o tc2 -std=c99 -pedantic -Wall -Wextra
-```
-6. Example Executions
-
-Converting "11001100" when the integer type is "signed"
-
-```
-$ ./tc2 "11001100" "signed"
-> -52
-```
-
-Converting "11001100" when the integer type is "unsigned"
-
-```
-$ ./tc2 "11001100" "unsigned"
-> 204
+srun -p gpu --gpus-per-node 1 --nodes 1 -A c00533 python test.py
 ```
 
 
