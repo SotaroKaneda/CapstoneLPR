@@ -3,7 +3,7 @@
 ### Copy the Repository
 
 ```
-$ git clone https://github.com/SotaroKaneda/CapstoneLPR.git
+git clone https://github.com/SotaroKaneda/CapstoneLPR.git
 ```
 
 ### Run the Model
@@ -30,27 +30,10 @@ $ gcc -Werror twos_comp_part1.c -o tc1 -std=c99 -pedantic -Wall -Wextra
 1. Load libraries
    
 ```
-$ module load python/gpu/3.11.5
-$ pip3 install transformers
+module load python/gpu/3.11.5
+pip3 install transformers
+pip3 install datasets
 ```
-
-3. Perform the following operations
-   * Read in the _8-bit binary string representation_ and _type of integer_ to be converted
-   * Based on the type of integer, convert the given binary string representation and print the decimal value
-     - **NOTE:** Generally integers are 32-bit values; but for simplicity, we are converting an 8-bit binary number to the given integer
-   * You have to check if the type passed in as an argument is a valid type of integer (i.e. _signed_ or _unsigned_)
-
-4. You should pass the command-line as follows in the given order
-   
-   order: **< 8-bit binary string representation >** **< integer type >**
-   
-5. Important Tips
-
-   * In an 8-bit _unsigned_ binary string, the range of representable integers is [0, 255].
-   * In an 8-bit _signed_ binary string, the range of representable integers is [-128, 127]. Here the Most Significant Bit (MSB), which is also the sign bit, is used to represent the magnitude of number. So we can represent -128 using 8 bits.
-   * The Autograder will only test and grade a limited set of numbers. Make sure to test your code for numbers in the ranges specified above. 
-
-6. Compile
 
 ```
 $ gcc -Werror twos_comp_part2.c -o tc2 -std=c99 -pedantic -Wall -Wextra
