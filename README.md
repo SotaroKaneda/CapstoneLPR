@@ -33,6 +33,7 @@ $ gcc -Werror twos_comp_part1.c -o tc1 -std=c99 -pedantic -Wall -Wextra
 module load python/gpu/3.11.5
 pip3 install transformers
 pip3 install datasets
+pip3 install jiwer
 ```
 
 2. Run on 1 GPU node (4 GPUS)
