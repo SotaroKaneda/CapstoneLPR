@@ -29,18 +29,21 @@ def main():
         ann_file = img.split(".")[0] + ".txt"
         annotation_path = os.path.join(annotations_folder, ann_file)
         image_path = os.path.join(image_folder, img)
-        with open(annotation_path) as f:
-            image = cv2.imread(image_path)
-            image_name, image_extension = img.split(".")
-            info = f.readline()
-            
-            if info == "":
-                continue
-            
-            cropped_image = crop_from_yolo_annotation(image, info)
-            save_path = os.path.join(output_folder, f"{image_name}.{image_extension}")
-            # cv2.imwrite(save_path, cropped_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-            cv2.imwrite(save_path, cropped_image)
+        if os.path.exists(annotation_path):
+            with open(annotation_path) as f:
+                image = cv2.imread(image_path)
+                image_name, image_extension = img.split(".")
+                info = f.readline()
+                
+                if info == "":
+                    continue
+                
+                cropped_image = crop_from_yolo_annotation(image, info)
+                if cropped_image.size == 0:
+                    continue
+                save_path = os.path.join(output_folder, f"{image_name}.png")
+                # cv2.imwrite(save_path, cropped_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                cv2.imwrite(save_path, cropped_image)
 
 
 if __name__ == "__main__":

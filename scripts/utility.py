@@ -92,7 +92,16 @@ def vertical_sort(boxes):
                 boxes[i] = boxes[i + 1]
                 boxes[i + 1] = temp
 
-def get_bounding_box_data(model_prediction, image, padding=0):
+def get_highest_conf(boxes):
+    highest_conf = ""
+    highest_conf = boxes[0]
+    for i in range(len(boxes) - 1):
+        if boxes[i][1] < boxes[i + 1][1]:
+            highest_conf = boxes[i + 1]
+
+        return [highest_conf]
+
+def get_bounding_box_data(model_prediction, image, padding=0, model="lp"):
     """
         Retrieves bounding box data from a YOLOv5 model prediction output.
         Optionally adds padding to the bounding boxes
@@ -126,9 +135,12 @@ def get_bounding_box_data(model_prediction, image, padding=0):
         boxes.append(bounding_box)
 
     # sort horizontally and vertically
-    if len(boxes) > 1:
-        boxes.sort(key=lambda box: box[0])
-        vertical_sort(boxes)
+        if len(boxes) > 1:
+            if model == "lp":
+                boxes = get_highest_conf(boxes)
+            else:
+                boxes.sort(key=lambda box: box[0])
+                vertical_sort(boxes)
 
     return boxes
 
