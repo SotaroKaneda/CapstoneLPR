@@ -12,13 +12,16 @@ class CharacterDataset(Dataset):
 
     def __len__(self):
         return len(self.images_filepaths)
-    
+
     def __getitem__(self, idx):
         image_filepath = self.images_filepaths[idx]
+        base, filename = os.path.split(image_filepath)
+        name, ext = os.path.splitext(filename)
         image = cv2.cvtColor(cv2.imread(image_filepath), cv2.COLOR_BGR2RGB)
         if self.transforms is not None:
             image = self.transforms(image=image)["image"]
-        label = self.labels.index(image_filepath.split("\\")[-1].split(".")[0][0])
-        image_name = image_filepath.split("\\")[-1]
+        
+        # The first character of the filename is the class
+        label = self.labels.index(name[0])
 
-        return image, label, image_name
+        return image, label
