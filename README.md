@@ -12,7 +12,7 @@ git clone https://github.com/SotaroKaneda/CapstoneLPR.git
 cd CapstoneLPR
 pip install -r requirements.txt
 ```
-##### Install the appropriate torch and torchvision libraries for your system.  
+#### Install the appropriate torch and torchvision libraries for your system.  
 Install Guide: https://pytorch.org/get-started/locally/  
 Commands Below:  
 **Linux**  
