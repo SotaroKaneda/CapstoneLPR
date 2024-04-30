@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ```
 ##### Install the appropriate torch and torchvision libraries for your system.  
 Install Guide: https://pytorch.org/get-started/locally/  
-Commands Below:
+Commands Below:  
 **Linux**  
 *CUDA 11.8*  
 ```
