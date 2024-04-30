@@ -12,7 +12,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 import scripts.utility as utils
-from classifier import CharacterModel
+from classifier.CharacterModel import CharacterModel
 from pathlib import Path
 
 
@@ -59,13 +59,11 @@ def get_crops_chars(model_output, image):
     return char_list 
 
 
-def predict_chars(lp_crop, char_model, classifier, transforms, device):
+def predict_chars(character_crops, classifier, transforms, device):
     labels = "0123456789ABCDEFGHIJKLMNPQRSTUVWXYZ" 
     pred_str = ""
-    char_pred = char_model(lp_crop)
-    char_crops = get_crops_chars(char_pred, lp_crop)
     with torch.no_grad():
-        for char_image in char_crops:
+        for char_image in character_crops:
             char_image = image = transforms(image=char_image)["image"]
             char_image = char_image.unsqueeze(0).to(device)
             char_pred = classifier(char_image)
@@ -123,7 +121,6 @@ def parse_csv(file_handle):
 
     return (headers, data, num_records)
 
-sys.exit()
 
 # Path issue fix: https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
 import pathlib
@@ -131,25 +128,22 @@ temp = pathlib.PosixPath
 pathlib.PosixPath = pathlib.WindowsPath
 
 # image_path = r"C:\Users\wilmc\Desktop\test-images\001115_1693566781560F5_031.jpg"
-model_path = Path(r"C:\Users\Jed\Desktop\capstone_project\CapstoneLPR\best_weights\lp-detect-L-best.pt")
-lp_weights = os.path.join("best_weights", "lp-detect-L-best.pt")
-char_weights = os.path.join("best_weights", "char-detect-M-20k.pt")
-resnet_weights = r"C:\Users\Jed\Desktop\capstone_project\CapstoneLPR\best_weights\train-1M-70.pth"
+lp_weights = os.path.join("weights", "lp-detect.pt")
+char_weights = os.path.join("weights", "char-detect.pt")
+resnet_weights = os.path.join("weights", "resnet-classifier.pth")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 lp_model = torch.hub.load('ultralytics/yolov5', 'custom', lp_weights)#, force_reload=True)
 char_model = torch.hub.load('ultralytics/yolov5', 'custom', char_weights)#, force_reload=True)
 
 resnet_classifier = CharacterModel()
-resnet_classifier.load_state_dict(torch.load(resnet_weights))
+resnet_classifier.load_state_dict(torch.load(resnet_weights, map_location=torch.device('cpu')))
 lp_model.eval()
 char_model.eval()
 resnet_classifier.eval()
 lp_model.to(device)
 char_model.to(device)
 resnet_classifier.to(device)
-
-
 
 image_size = 32
 transforms = A.Compose([
@@ -170,32 +164,25 @@ transforms = A.Compose([
     ])
 
 
-image_paths = glob.glob(os.path.join(r"D:\v2x-11-30-data\11-30-Parsed\TRAIN-TEST\TRAIN-LP\test\images", "*"))
+# image_paths = glob.glob(os.path.join(r"D:\v2x-11-30-data\11-30-Parsed\TRAIN-TEST\TRAIN-LP\test\images", "*"))
 
-label_dict = {}
-label_path = os.path.join(r"D:\v2x-dataset", "data-11-30.csv")
-with open(label_path, "r") as file:
-    label_dict = create_label_dict(file.readlines())
-
-with open("../4-25-Resnet50-1M-Small-Test-IPROC.csv", "w") as file:
-    file.write("LABEL,PRED_REG,PRED_INV,PRED_HE,PRED_INV_HE,IMAGE\n")
-    for image_path in image_paths:
-        base, image_name = os.path.split(image_path)
-        name, ext = os.path.splitext(image_name)
-        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-        lp_pred = lp_model(image)
-        lp_crop = get_crop_lp(lp_pred, image)
-        
-        if lp_crop.size > 0:
-            inverted = ~lp_crop
-            he = HE(lp_crop)
-            inv_he = HE(inverted)
-            pred_chars = predict_chars(lp_crop, char_model=char_model, classifier=resnet_classifier, transforms=transforms, device=device)
-            pred_he = predict_chars(he, char_model=char_model, classifier=resnet_classifier, transforms=transforms, device=device)
-            pred_inv_he = predict_chars(inv_he, char_model=char_model, classifier=resnet_classifier, transforms=transforms, device=device)
-            pred_inv = predict_chars(inverted, char_model=char_model, classifier=resnet_classifier, transforms=transforms, device=device)
+# for image_path in image_paths:
+for image_path in [os.path.join(r"D:\v2x-11-30-data\ALPRPlateExport11-30-23", "001015_1701090117276F05_941.jpg")]:
+    base, image_name = os.path.split(image_path)
+    name, ext = os.path.splitext(image_name)
+    image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+    lp_pred = lp_model(image)
+    lp_crop = get_crop_lp(lp_pred, image)
+    
+    if lp_crop.size > 0:
+        inverted = ~lp_crop
+        he = HE(lp_crop)
+        inv_he = HE(inverted)
+        char_pred = char_model(inv_he)
+        char_crops = get_crops_chars(char_pred, he)
+        pred = predict_chars(char_crops, classifier=resnet_classifier, transforms=transforms, device=device)
+        print(pred)
             
-            # file.write(f"{label_dict[name]},{pred_chars},{pred_inv},{pred_he},{pred_inv_he},{name}\n")
 
 pathlib.PosixPath = temp
         

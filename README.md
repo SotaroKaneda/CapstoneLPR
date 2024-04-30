@@ -2,27 +2,25 @@
 
 ### Copy the Repository
 
+
 ```
-git clone https://github.com/SotaroKaneda/CapstoneLPR.git
+git clone https://github.com/SotaroKaneda/CapstoneLPR.git  
+```
+### Install Dependencies  
+Tested with Python>=3.8.0, and PyTorch>=1.8
+```
+cd CapstoneLPR
+pip install -r requirements.txt
 ```
 
 ### Run the Model
 
-1. Create a file named `twos_comp_part1.c` and implement the following in the file.
+1. Place weights folder containing the model weights in the CaptsoneLPR folder.
 
-2. Perform the following operations
-   * Read the input argument integer to be converted. You should pass this value as a command-line argument, in decimal format, upon execution. (This integer can be negative, positive or 0)
-   
-     order: **< number in decimal >**
-     
-   * Convert the given integer and print the 8-bit binary representation of the string
-     - **NOTE:** Generally integers are 32-bit values; but for simplicity we are converting the given integer to an 8-bit binary number.
-   * You have to check if the integer passed in as an argument is within the range of values that can be accurately shown in an 8-bit **signed** number.
-
-3. Compile
+2. Run main.py with a Path to an image or folder of images
 
 ```
-$ gcc -Werror twos_comp_part1.c -o tc1 -std=c99 -pedantic -Wall -Wextra
+python main.py "image/or/folder/path"
 ```
 
 ### Train the model on BigRed

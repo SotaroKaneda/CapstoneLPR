@@ -2,11 +2,7 @@ import math
 import json
 import cv2
 import numpy as np
-from openpyxl import Workbook
 
-
-# TODO Add image boundary checking in annotation_to_points and get_bounding_box_data
-# TODO Add vertical character sorting to get_bounding_box_data
 
 def annotation_to_points(image, annotation_info):
     
@@ -229,36 +225,3 @@ def deskew(image, points):
 
     return deskewed
 
-
-def visualize_annotations(image_path, box=None, keypoints=None, box_color=(0, 255, 0), point_color=(0, 0, 255)):
-    # TODO Add box annotation plotting
-
-    annotated = ""
-    image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    cv2.namedWindow("Annotation", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Annotation", 600, 600)
-    
-    if keypoints:
-        xmin, xmax, ymin, ymax = get_min_max(keypoints)
-        annotated = cv2.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 255, 0), 3)
-
-        for point in keypoints:
-            x, y = point
-            annotated = cv2.circle(image, (int(x), int(y)), radius=10, color=point_color, thickness=-1)
-
-
-    cv2.imshow("Annotation", annotated)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-
-def create_init_workbook(sheet_title, headers):
-    workbook = Workbook()
-    sheet = workbook.active
-    headers = headers
-    sheet.title = sheet_title
-    sheet.append(headers)
-
-    return workbook
