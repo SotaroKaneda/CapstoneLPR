@@ -114,12 +114,16 @@ def get_bounding_box_data(model_prediction, image, padding=0, model="lp"):
         Optionally adds padding to the bounding boxes
 
         model_prediction: a YOLOv5 model prediction. Format: [[xmin, ymin, xmax, ymax, confidence, class number]]
+        image: an opencv loaded image(numpy array)
         padding: optional parameter to add padding to the bounding box. This increases the size of the bounding box.
+        model: specifies the model type that produced the model_prediction
+            Side effects:
+                model="LP" -> takes the highest confidence bounding box
+                model="char" -> sorts the character bounding boxes horizontally and vertically
 
         return: boxes list with bounding box list, confidence, and class number per box
                 [[bounding_box, confidence, class_number], ...]
                 [[xmin, ymin, xmax, ymax], confidence, class_number], ...]
-                len(boxes) >= 1
     """
     
     boxes = []
@@ -141,10 +145,12 @@ def get_bounding_box_data(model_prediction, image, padding=0, model="lp"):
         bounding_box = [[xmin, ymin, xmax, ymax], confidence, class_number]
         boxes.append(bounding_box)
 
-    # sort horizontally and vertically
+    
         if len(boxes) > 1:
+            # take the box with the highest confidence
             if model == "lp":
                 boxes = get_highest_conf(boxes)
+            # sort horizontally and vertically
             elif model == "char":
                 boxes.sort(key=lambda box: box[0])
                 vertical_sort(boxes)
@@ -193,16 +199,6 @@ def get_crop_lp(model_output, image):
 
         prediction = prediction.tolist()     
         boxes = get_bounding_box_data(prediction, image, padding=0, model="lp")
-
-        # take highest conf box for license plates for now
-        highest_conf = ""
-        if len(boxes) > 1:
-            highest_conf = boxes[0]
-            for i in range(len(boxes) - 1):
-                if boxes[i][1] < boxes[i + 1][1]:
-                    highest_conf = boxes[i + 1]
-
-            boxes = [highest_conf]
 
         for box in boxes:
             bbox, conf, klass = box
