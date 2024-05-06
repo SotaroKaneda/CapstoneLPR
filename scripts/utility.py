@@ -2,8 +2,13 @@ import math
 import json
 import cv2
 import numpy as np
+import re
+import torch
 
 
+##############################################
+# Bounding Box and annotations handling functions
+##############################################
 def annotation_to_points(image, annotation_info):
     
     klass, x_center, y_center, box_width, box_height = annotation_info.split(' ')
@@ -70,6 +75,11 @@ def crop_from_points(image, bbox_points):
     return image[int(ymin):int(ymax), int(xmin):int(xmax)]
 
 def vertical_sort(boxes):
+    """
+        boxes: output from a get_bounding_box_data function call
+
+        - A horizontal sort has already been done with respect to the top left point of each box and the x-axis
+    """
     num_boxes = len(boxes)
 
     for i in range(0, num_boxes - 1):
@@ -80,9 +90,10 @@ def vertical_sort(boxes):
         box1_height = ymax1 - ymin1
         box2_height = ymax2 - ymin2
 
-        # 0.25 to account for the possibility of vertical overlap
+        # check that the box is above the next box
+        # 0.25 to account for the possibility of vertical overlap between boxes
         if (ymin1 >= (ymax2 - 0.25*box2_height)):
-            # print("ran")
+            # check if the first box needs to be moved
             if xmax1 >= xmin2 and xmax1 <= xmax2:
                 temp = boxes[i]
                 boxes[i] = boxes[i + 1]
@@ -134,14 +145,175 @@ def get_bounding_box_data(model_prediction, image, padding=0, model="lp"):
         if len(boxes) > 1:
             if model == "lp":
                 boxes = get_highest_conf(boxes)
-            else:
+            elif model == "char":
                 boxes.sort(key=lambda box: box[0])
                 vertical_sort(boxes)
 
     return boxes
 
+##############################################
+# Image Processing functions
+##############################################
+def HE(img):
+    """
+        img: opencv loaded image(numpy array)
+
+        Returns a histogram equalized image
+    """
+    
+    # Convert the image to LAB color space
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+    # Split the LAB image into L, A, and B channels
+    l, a, b = cv2.split(lab)
+
+    # Apply histogram equalization to the L channel
+    l_equalized = cv2.equalizeHist(l)
+
+    # Merge the equalized L channel with the original A and B channels
+    lab_equalized = cv2.merge((l_equalized, a, b))
+
+    # Convert the equalized LAB image back to BGR color space
+    equalized_img = cv2.cvtColor(lab_equalized, cv2.COLOR_LAB2BGR)
+
+    return equalized_img
+
+##############################################
+# Model output handling and prediction functions
+##############################################
+def get_crop_lp(model_output, image):
+    """
+        Returns either a license plate with the highest confidence score
+            or an empty numpy array
+    """
+    crop = np.array([])
+    for prediction in model_output.xyxy:
+        if prediction.numel() == 0:    
+            continue
+
+        prediction = prediction.tolist()     
+        boxes = get_bounding_box_data(prediction, image, padding=0, model="lp")
+
+        # take highest conf box for license plates for now
+        highest_conf = ""
+        if len(boxes) > 1:
+            highest_conf = boxes[0]
+            for i in range(len(boxes) - 1):
+                if boxes[i][1] < boxes[i + 1][1]:
+                    highest_conf = boxes[i + 1]
+
+            boxes = [highest_conf]
+
+        for box in boxes:
+            bbox, conf, klass = box
+            crop = crop_from_points(image, bbox)
+
+    return crop
+
+def get_crops_chars(model_output, image):
+    """
+        Returns a list of sorted character image crops
+    """
+    char_list = []
+    for prediction in model_output.xyxy:
+        if prediction.numel() == 0:    
+            continue
+
+        prediction = prediction.tolist()    
+        
+        boxes = get_bounding_box_data(prediction, image, padding=1, model="char")
+        for box in boxes:
+            bbox, conf, klass = box
+            crop = crop_from_points(image, bbox)
+            char_list.append(crop)
+
+    return char_list 
+
+
+def predict_chars(character_crops, classifier, transforms, device):
+    """
+        character_crops: a list of cropped character images
+        classifier: image classification model(Resnet50)
+        transforms: albumations image transforms for letterboxing and image normalization
+        device: torch device to send the image to for model processing: cuda(gpu) or cpu
+    """
+    labels = "0123456789ABCDEFGHIJKLMNPQRSTUVWXYZ" 
+    pred_str = ""
+    with torch.no_grad():
+        for char_image in character_crops:
+            char_image = image = transforms(image=char_image)["image"]
+            char_image = char_image.unsqueeze(0).to(device)
+            char_pred = classifier(char_image)
+            values, real = torch.max(char_pred, 1)
+            pred_str += labels[real]
+
+    return pred_str
+
+def pred_lp_trocr(lp_crop, trocr_model, processor, device):
+    """
+        lp_crop: a cropped license plate image
+        trocr_model: image classification model(Resnet50)
+        processor: albumations image transforms for letterboxing and image normalization
+        device: torch device to send the image to for model processing: cuda(gpu) or cpu
+    """
+    pixel_values = processor(images=lp_crop, return_tensors="pt").pixel_values
+    pixel_values = pixel_values.to(device)
+    generated_ids = trocr_model.generate(pixel_values)
+    generated_ids = generated_ids.cpu()
+    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
+
+    # regex to remove whitespace and extra characters that are not numbers or letters
+    #   return just the generated text above if you don't want the extra stuff parsed out
+    parsed_ocr_value = re.sub('[\W_]+', '', generated_text[0])
+
+    # this joins on whitespace and keeps extra characters
+    # lp_prediction = "".join(generated_text) 
+
+    return parsed_ocr_value
+
+##############################################
+# Keypoint plate detector helper functions
+##############################################
+def get_min_max(keypoints):
+    top_left, top_right, bottom_left, bottom_right = keypoints
+    xmin = min(top_left[0], bottom_left[0])
+    xmax = max(top_right[0], bottom_right[0])
+    ymin = min(top_left[1], top_right[1])
+    ymax = max(bottom_left[1], bottom_right[1])
+
+    return [xmin, xmax, ymin, ymax]  
+
+
+def get_transform_points(keypoints, padding=None):
+    xmin, xmax, ymin, ymax = get_min_max(keypoints)
+    box_width = xmax - xmin
+    box_height = ymax - ymin
+    
+    # point order: top left, bottom left, bottom right, top right 
+    dest_points = np.float32([[0, 0],
+                              [0, box_height-1],
+                              [box_width-1, box_height-1],
+                              [box_width-1, 0]])
+
+    return [dest_points, box_width, box_height]
+
+
+def deskew(image, points):
+    top_left, top_right, bottom_left, bottom_right = points 
+    input_points = np.float32([top_left, bottom_left, bottom_right, top_right])
+    dest_points, width, height = get_transform_points(points)
+
+    M = cv2.getPerspectiveTransform(input_points, dest_points)
+    deskewed = cv2.warpPerspective(image, M, (int(width), int(height)), flags=cv2.INTER_LINEAR)
+
+    return deskewed
+
 
 def extract_from_datumaro(json_file, finished_items=None):
+    """
+        Extract Plate data from exported CVAT
+            datumaro file formatted file
+    """
     f = open(json_file)
     json_dict = json.load(f)
     
@@ -191,37 +363,25 @@ def extract_from_datumaro(json_file, finished_items=None):
     return data
 
 
-def get_min_max(keypoints):
-    top_left, top_right, bottom_left, bottom_right = keypoints
-    xmin = min(top_left[0], bottom_left[0])
-    xmax = max(top_right[0], bottom_right[0])
-    ymin = min(top_left[1], top_right[1])
-    ymax = max(bottom_left[1], bottom_right[1])
+##############################################
+# File handling functions
+##############################################
+def parse_csv(file_handle):
+    lines = file_handle.readlines()
+    headers = lines[0]
+    data = lines[1:]
+    num_records = len(data)
 
-    return [xmin, xmax, ymin, ymax]  
+    return (headers, data, num_records)
 
-
-def get_transform_points(keypoints, padding=None):
-    xmin, xmax, ymin, ymax = get_min_max(keypoints)
-    box_width = xmax - xmin
-    box_height = ymax - ymin
-    
-    # point order: top left, bottom left, bottom right, top right 
-    dest_points = np.float32([[0, 0],
-                              [0, box_height-1],
-                              [box_width-1, box_height-1],
-                              [box_width-1, 0]])
-
-    return [dest_points, box_width, box_height]
-
-
-def deskew(image, points):
-    top_left, top_right, bottom_left, bottom_right = points 
-    input_points = np.float32([top_left, bottom_left, bottom_right, top_right])
-    dest_points, width, height = get_transform_points(points)
-
-    M = cv2.getPerspectiveTransform(input_points, dest_points)
-    deskewed = cv2.warpPerspective(image, M, (int(width), int(height)), flags=cv2.INTER_LINEAR)
-
-    return deskewed
-
+def create_label_dict(file_lines):
+    headers = file_lines[0].split(",")[:-1]
+    data = file_lines[1:]
+    label_dict = {}
+    for line in data:
+        UFM_ID,TXN_TIME,TOLLZONE_ID,LANE_POSITION,PLATE_TYPE,PLATE_TYPE_CONFIDENCE,PLATE_READ,PLATE_RDR_CONFIDENCE, \
+        PLATE_JURISDICTION,IR_DISPOSITIONED,PAYMENT_METHOD,IMAGE1,IMAGE2,IMAGE3,IMAGE4,TYPE1,TYPE2,TYPE3,TYPE4 = line.split(",")[:-1]
+        for image in [IMAGE1, IMAGE2, IMAGE3, IMAGE4]:
+            if image != "None":
+                label_dict[image.split(".")[0]] = PLATE_READ
+    return label_dict
