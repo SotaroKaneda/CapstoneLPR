@@ -96,7 +96,7 @@ with open(os.path.join("model-runs", filename), "w") as file:
             # Crop from the histogram equalized image. Predictions on histogram equalized images yielded the best predictions
             char_crops = utils.get_crops_chars(char_pred, he)
             pred = utils.predict_chars(char_crops, classifier=resnet_classifier, transforms=transforms, device=device)
-            file.write(f"{pred},{image_name}\n")
+            file.write(f"{pred},{name}\n")
 
 print(f"Results written to model-runs/{filename}")        
 

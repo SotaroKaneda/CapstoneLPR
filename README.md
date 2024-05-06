@@ -55,6 +55,20 @@ pip3 install torch torchvision
 ```
 python main.py "image/or/folder/path"
 ```
+3. Output is stored in model-runs/
+
+### Check Accuracy on Run Output  
+**This only works for images from 'data-11-30.csv. The label_file_path variable on line 157 of accuracy_metrics.py will need to be modified for other images not included in the original V2X image set from 11/30.'**
+1. Place data-11-30.csv in the CapstoneLPR directory.  
+2. Run command:   
+```
+python accuracy_metrics.py "path/to/results/output/file"
+```
+### Reproduce Capstone Accuracy Metrics  
+1. Run command:   
+```
+python accuracy_metrics.py CAPSTONE "path/to/full" "path/to/small"
+```
 
 ### Train the model on BigRed
 
