@@ -62,14 +62,16 @@ python main.py "image/or/folder/path"
 1. Place data-11-30.csv in the CapstoneLPR directory.  
 2. Run command:   
 ```
-python accuracy_metrics.py "path/to/results/output/file"
+python accuracy_metrics.py "path/to/runs/output/file"
 ```
+- "path/to/runs/output/file": path to the output file stored in model-runs/ produced by main.py
 ### Reproduce Capstone Accuracy Metrics  
 1. Run command:   
 ```
 python accuracy_metrics.py CAPSTONE "path/to/full" "path/to/small"
 ```
-
+- "path/to/full": path to 4-25-full-results.csv  
+- "path/to/small": path to 4-25-small-results.csv
 ### Train the model on BigRed
 
 1. Load libraries
