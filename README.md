@@ -53,7 +53,9 @@ pip3 install torch torchvision
 - scripts/utility.py : support functions 
 - scripts/  : Contains several scripts used to label or create datasets 
 - classifier/ Resnet50 model, pytorch dataset, and train.py script used for Resnet50 model training  
-- demo-scripts/ : used throught the year  
+- extra-code/ : various scipts used for dataset generation and other tasks  
+    - *Most of these will need to be modified in some way. None of this code here has been generalized.*
+- demo-scripts/ : demo files used throught the year  
 - easyocr/ : easyocr prediction scripts  
 - trocr/ : trocr prediction scripts  
 - yolo : YOLOv5 training README.md
