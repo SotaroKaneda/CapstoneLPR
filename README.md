@@ -46,6 +46,18 @@ pip3 install torch torchvision torchaudio
 ```
 pip3 install torch torchvision
 ```
+
+### Folders and Files  
+- main.py : run inference on a an image or a folder of images  
+- accuracy-metrics.py : reproduce capstone results or check results from a runs output file produced by main.py  
+- scripts/utility.py : support functions 
+- scripts/  : Contains several scripts used to label or create datasets 
+- classifier/ Resnet50 model, pytorch dataset, and train.py script used for Resnet50 model training  
+- demo-scripts/ : used throught the year  
+- easyocr/ : easyocr prediction scripts  
+- trocr/ : trocr prediction scripts  
+- yolo : YOLOv5 training README.md
+
 ### Run the Model
 
 1. Place the weights folder containing the model weights in the CaptsoneLPR folder.
@@ -55,6 +67,7 @@ pip3 install torch torchvision
 ```
 python main.py "image/or/folder/path"
 ```
+- "image/or/folder/path": path to an image or folder of images
 3. Output is stored in model-runs/
 
 ### Check Accuracy on Run Output  

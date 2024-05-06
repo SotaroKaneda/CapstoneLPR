@@ -5,9 +5,9 @@
 `cd yolov5`  
 `pip install -r requirements.txt  # install`  
 From: https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#2-select-a-model  
-
-  - Added yolov5 repo to the .gitignore.  
-2. Run `main.py` to run detection on images in `/images`.
+ 
+2. Run `main.py` to run detection on images.  
+- This may need to be modified.  
 ### Train
 
 `python train.py --epochs 100 --data LPD.yaml --weights yolov5s.pt`
