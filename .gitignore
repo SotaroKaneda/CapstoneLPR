@@ -5,6 +5,8 @@ runs/
 cropped_images/
 sheets/
 weights/
+model-runs/
+data-11-30.csv
 no_LP.csv
 preds.csv
 parsed_data.csv

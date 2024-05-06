@@ -3,6 +3,7 @@ import os
 import cv2
 import sys
 import glob
+import datetime
 import numpy as np
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -12,12 +13,12 @@ from classifier.CharacterModel import CharacterModel
 
 
 # Path issue fix: https://stackoverflow.com/questions/57286486/i-cant-load-my-model-because-i-cant-put-a-posixpath
+temp = ""
 if sys.platform == "win32":
     import pathlib
     temp = pathlib.PosixPath
     pathlib.PosixPath = pathlib.WindowsPath
 
-# image_path = r"C:\Users\wilmc\Desktop\test-images\001115_1693566781560F5_031.jpg"
 lp_weights = os.path.join("weights", "lp-detect.pt")
 char_weights = os.path.join("weights", "char-detect.pt")
 resnet_weights = os.path.join("weights", "resnet-classifier.pth")
@@ -27,7 +28,9 @@ lp_model = torch.hub.load('ultralytics/yolov5', 'custom', lp_weights)#, force_re
 char_model = torch.hub.load('ultralytics/yolov5', 'custom', char_weights)#, force_reload=True)
 
 resnet_classifier = CharacterModel()
-resnet_classifier.load_state_dict(torch.load(resnet_weights, map_location=torch.device('cpu')))
+### to run on the cpu
+# resnet_classifier.load_state_dict(torch.load(resnet_weights, map_location=torch.device('cpu')))
+resnet_classifier.load_state_dict(torch.load(resnet_weights))
 lp_model.eval()
 char_model.eval()
 resnet_classifier.eval()
@@ -55,24 +58,47 @@ transforms = A.Compose([
 
 
 # image_paths = glob.glob(os.path.join(r"D:\v2x-11-30-data\11-30-Parsed\TRAIN-TEST\TRAIN-LP\test\images", "*"))
+image_paths = []
+if len(sys.argv) < 2:
+    print("Missing Argument: image or images folder path")
 
-# for image_path in image_paths:
-for image_path in [os.path.join(r"D:\v2x-11-30-data\ALPRPlateExport11-30-23", "001015_1701090117276F05_941.jpg")]:
-    base, image_name = os.path.split(image_path)
-    name, ext = os.path.splitext(image_name)
-    image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-    lp_pred = lp_model(image)
-    lp_crop = utils.get_crop_lp(lp_pred, image)
-    
-    if lp_crop.size > 0:
-        inverted = ~lp_crop
-        he = utils.HE(lp_crop)
-        inv_he = utils.HE(inverted)
-        char_pred = char_model(inv_he)
-        char_crops = utils.get_crops_chars(char_pred, he)
-        pred = utils.predict_chars(char_crops, classifier=resnet_classifier, transforms=transforms, device=device)
-        print(pred)
-            
+path = sys.argv[1]
+if os.path.isfile(path):
+    image_paths = [path]
+elif os.path.isdir(path):
+    image_paths = glob.glob(os.path.join(path, "*"))
+
+if not os.path.isdir("model-runs"):
+    os.mkdir("model-runs")
+
+timestamp = str(datetime.datetime.now())
+date, time = timestamp.split(".")[0].split(" ")
+time = time.replace(":", "-")
+filename = f"Run---{date}---{time}.csv"
+with open(os.path.join("model-runs", filename), "w") as file:
+    file.write("PRED,IMAGE\n")
+    for image_path in image_paths:
+        base, image_name = os.path.split(image_path)
+        name, ext = os.path.splitext(image_name)
+        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+        lp_pred = lp_model(image)
+        lp_crop = utils.get_crop_lp(lp_pred, image)
+        
+        if lp_crop.size > 0:
+            # invert the image
+            inverted = ~lp_crop
+            # histogram equalize the image
+            he = utils.HE(lp_crop)
+            # invert the histogram equalized image
+            inv_he = utils.HE(inverted)
+            # run character detection on the inverted histogram equalized image This had the best results for detecting characters on plates.
+            char_pred = char_model(inv_he)
+            # Crop from the histogram equalized image. Predictions on histogram equalized images yielded the best predictions
+            char_crops = utils.get_crops_chars(char_pred, he)
+            pred = utils.predict_chars(char_crops, classifier=resnet_classifier, transforms=transforms, device=device)
+            file.write(f"{pred},{image_name}\n")
+
+print(f"Results written to model-runs/{filename}")        
 
 if sys.platform == "win32":
     pathlib.PosixPath = temp
