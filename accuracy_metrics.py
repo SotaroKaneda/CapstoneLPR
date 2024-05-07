@@ -119,8 +119,10 @@ test_type = sys.argv[1]
 ### To reproduce final capstone results: 
 #       Replace the two file paths below with correct path location
 if test_type == "CAPSTONE":
-    capstone_full_path = r"C:\Users\Jed\Desktop\capstone_project\4-25-full-results.csv"
-    capstone_small_path = r"C:\Users\Jed\Desktop\capstone_project\4-25-small-results.csv"
+    # capstone_full_path = r"C:\Users\Jed\Desktop\capstone_project\4-25-full-results.csv"
+    # capstone_small_path = r"C:\Users\Jed\Desktop\capstone_project\4-25-small-results.csv"
+    capstone_full_path = sys.argv[2]
+    capstone_small_path = sys.argv[3]
 
     if not os.path.exists(capstone_full_path) or not os.path.exists(capstone_small_path):
         print("Capstone file paths incorrect or the files do not exist.")
