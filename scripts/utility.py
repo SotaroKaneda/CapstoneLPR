@@ -248,8 +248,8 @@ def predict_chars(character_crops, classifier, transforms, device):
 def pred_lp_trocr(lp_crop, trocr_model, processor, device):
     """
         lp_crop: a cropped license plate image
-        trocr_model: image classification model(Resnet50)
-        processor: albumations image transforms for letterboxing and image normalization
+        trocr_model: hugging face TrOCR Model
+        processor: Hugging face TrOCR prosessor 
         device: torch device to send the image to for model processing: cuda(gpu) or cpu
     """
     pixel_values = processor(images=lp_crop, return_tensors="pt").pixel_values
